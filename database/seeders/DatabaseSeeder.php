@@ -19,6 +19,7 @@ class DatabaseSeeder extends Seeder
             DepartemenSeeder::class,
             TeamSeeder::class,
             KaryawanSeeder::class,
+            AbsensiSeeder::class,
         ]);
     }
 }

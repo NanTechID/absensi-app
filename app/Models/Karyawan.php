@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Karyawan extends Model
 {
@@ -25,6 +26,14 @@ class Karyawan extends Model
     public function team(): BelongsTo
     {
         return $this->belongsTo(Team::class);
+    }
+
+    /**
+     * Karyawan memiliki banyak riwayat Absensi.
+     */
+    public function absensis(): HasMany
+    {
+        return $this->hasMany(Absensi::class);
     }
 
     /**

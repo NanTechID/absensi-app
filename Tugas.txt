@@ -1,0 +1,298 @@
+📘 Materi Pembelajaran
+1. Konsep Customisasi Form & Table
+Secara default, Filament membuat CRUD otomatis dengan form dan tabel sederhana.
+Namun, kita bisa mengubah tampilan dan fungsi dengan menambahkan komponen-komponen berikut:
+
+Search
+Komponen
+Kegunaan
+TextInput
+
+Input teks biasa
+
+DatePicker / DateTimePicker
+
+Pilihan tanggal / waktu
+
+FileUpload
+
+Upload file atau foto
+
+Select
+
+Dropdown pilihan (termasuk relasi)
+
+Toggle
+
+Switch On/Off
+
+Textarea
+
+Input teks panjang
+
+ColorPicker
+
+Pilih warna
+
+RichEditor
+
+Input teks dengan format HTML
+
+2. Menyiapkan Tabel Absensi
+Kita akan buat tabel baru bernama absensis untuk menyimpan data kehadiran harian.
+
+Migration
+
+
+Copy
+php artisan make:model Absensi -m
+database/migrations/xxxx_xx_xx_create_absensis_table.php
+
+
+Copy
+Schema::create('absensis', function (Blueprint $table) {
+    $table->id();
+    $table->foreignId('karyawan_id')->constrained()->cascadeOnDelete();
+    $table->timestamp('waktu_masuk')->nullable();
+    $table->timestamp('waktu_pulang')->nullable();
+    $table->string('foto_masuk')->nullable();
+    $table->string('foto_pulang')->nullable();
+    $table->string('status')->default('Hadir'); // Hadir, Izin, Sakit, dll.
+    $table->timestamps();
+});
+Lalu:
+
+
+Copy
+php artisan migrate
+3. Menambahkan Relasi Model
+app/Models/Karyawan.php
+
+
+Copy
+public function absensis()
+{
+    return $this->hasMany(Absensi::class);
+}
+app/Models/Absensi.php
+
+
+Copy
+public function karyawan()
+{
+    return $this->belongsTo(Karyawan::class);
+}
+4. Membuat Filament Resource
+
+Copy
+php artisan make:filament-resource Absensi
+5. Kustomisasi Form Absensi
+Buka file app/Filament/Resources/AbsensiResource.php, lalu ubah bagian form() menjadi seperti ini:
+
+
+Copy
+use Filament\Forms;
+use Filament\Forms\Components\FileUpload;
+use Filament\Forms\Components\DateTimePicker;
+use Filament\Forms\Components\Select;
+
+public static function form(Form $form): Form
+{
+    return $form->schema([
+        Select::make('karyawan_id')
+            ->label('Nama Karyawan')
+            ->relationship('karyawan', 'nama_karyawan')
+            ->searchable()
+            ->required(),
+
+        DateTimePicker::make('waktu_masuk')
+            ->label('Waktu Masuk')
+            ->seconds(false)
+            ->default(now()),
+
+        FileUpload::make('foto_masuk')
+            ->label('Foto Masuk')
+            ->directory('foto_absensi')
+            ->image()
+            ->imageEditor()
+            ->required(),
+
+        DateTimePicker::make('waktu_pulang')
+            ->label('Waktu Pulang')
+            ->seconds(false)
+            ->nullable(),
+
+        FileUpload::make('foto_pulang')
+            ->label('Foto Pulang')
+            ->directory('foto_absensi')
+            ->image()
+            ->imageEditor()
+            ->nullable(),
+
+        Select::make('status')
+            ->label('Status')
+            ->options([
+                'Hadir' => 'Hadir',
+                'Izin' => 'Izin',
+                'Sakit' => 'Sakit',
+                'Cuti' => 'Cuti',
+            ])
+            ->default('Hadir')
+            ->required(),
+    ])->columns(2);
+}
+6. Menampilkan Data di Table
+Masih di AbsensiResource.php, ubah bagian table() menjadi:
+
+
+Copy
+use Filament\Tables;
+
+public static function table(Table $table): Table
+{
+    return $table->columns([
+        Tables\Columns\TextColumn::make('karyawan.nama_karyawan')->label('Nama Karyawan')->searchable(),
+        Tables\Columns\TextColumn::make('waktu_masuk')->dateTime('d M Y H:i')->label('Masuk'),
+        Tables\Columns\TextColumn::make('waktu_pulang')->dateTime('d M Y H:i')->label('Pulang'),
+        Tables\Columns\ImageColumn::make('foto_masuk')->label('Foto Masuk')->height(60),
+        Tables\Columns\ImageColumn::make('foto_pulang')->label('Foto Pulang')->height(60),
+        Tables\Columns\BadgeColumn::make('status')
+            ->colors([
+                'success' => 'Hadir',
+                'warning' => 'Izin',
+                'danger' => 'Sakit',
+                'gray' => 'Cuti',
+            ]),
+    ])
+    ->filters([
+        Tables\Filters\SelectFilter::make('status')->options([
+            'Hadir' => 'Hadir',
+            'Izin' => 'Izin',
+            'Sakit' => 'Sakit',
+            'Cuti' => 'Cuti',
+        ]),
+    ])
+    ->actions([
+        Tables\Actions\EditAction::make(),
+        Tables\Actions\DeleteAction::make(),
+    ]);
+}
+7. Menambahkan Fitur Kamera (Opsional)
+Jika ingin mahasiswa belajar capture foto langsung dari kamera, gunakan library seperti WebcamJS di form Filament.
+
+Konsepnya:
+
+Tambahkan field foto_masuk (string path file).
+
+Tambahkan custom blade view untuk form yang memanggil kamera HTML5 (navigator.mediaDevices.getUserMedia()).
+
+Setelah capture, hasil foto dikirim ke server (base64 → disimpan sebagai file).
+
+Untuk tahap perkuliahan, cukup gunakan FileUpload dulu (upload manual dari kamera/galeri).
+
+🧪 Langkah Praktikum
+Search
+Langkah
+Deskripsi
+Perintah
+1
+
+Buat model dan migration Absensi
+
+php artisan make:model Absensi -m
+
+2
+
+Tambahkan relasi di model Karyawan dan Absensi
+
+edit file model
+
+3
+
+Jalankan migrasi
+
+php artisan migrate
+
+4
+
+Buat Filament Resource Absensi
+
+php artisan make:filament-resource Absensi
+
+5
+
+Ubah form & table di AbsensiResource.php
+
+edit manual
+
+6
+
+Tambahkan beberapa data absensi via /admin
+
+buka dashboard
+
+7
+
+Pastikan data tampil lengkap (nama karyawan, jam masuk/pulang, foto)
+
+test aplikasi
+
+🎯 Output yang Diharapkan
+Tabel Absensi muncul di menu sidebar.
+
+Mahasiswa bisa menambahkan record absensi lengkap dengan:
+
+Karyawan
+
+Waktu masuk & pulang
+
+Foto (upload manual)
+
+Status kehadiran
+
+Dashboard menampilkan tabel absensi dengan gambar & badge warna.
+
+💡 Tugas / Challenge
+Tambahkan validasi agar satu karyawan tidak bisa absen dua kali di hari yang sama.
+
+Tambahkan kolom tanggal_absen (DATE) otomatis ($table->date('tanggal')->default(now())).
+
+Tampilkan total absensi per karyawan di KaryawanResource (gunakan count() relasi absensis).
+
+(Bonus) Integrasikan kamera langsung menggunakan JavaScript MediaDevices.
+
+📚 Rangkuman
+Komponen
+Fungsi
+FileUpload
+
+Upload dan preview foto absensi
+
+Select
+
+Dropdown pilihan (relasi & status)
+
+DateTimePicker
+
+Input waktu masuk/pulang
+
+BadgeColumn
+
+Warna otomatis berdasarkan status
+
+relationship()
+
+Menghubungkan tabel relasi di Filament
+
+🧠 Kesimpulan
+Setelah pertemuan ini mahasiswa mampu:
+
+Membuat form absensi yang lengkap di Filament.
+
+Mengatur tampilan tabel absensi agar lebih informatif.
+
+Memahami bagaimana relasi Karyawan → Absensi bekerja dalam CRUD Filament.
+
+Siap melanjutkan ke Pertemuan 7: Autentikasi & Manajemen Role (Admin vs User).
+
+

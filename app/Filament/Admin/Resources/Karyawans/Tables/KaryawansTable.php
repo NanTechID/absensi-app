@@ -24,6 +24,12 @@ class KaryawansTable
                     ->toggleable(),
                 TextColumn::make('team.nama_team')->label('Team')->sortable()->searchable(),
                 TextColumn::make('team.departemen.nama_departemen')->label('Departemen')->sortable()->searchable(),
+                TextColumn::make('absensis_count')
+                    ->counts('absensis')
+                    ->label('Total Absensi')
+                    ->badge()
+                    ->color('info')
+                    ->sortable(),
             ])
             ->filters([
                 SelectFilter::make('team_id')->label('Team')
