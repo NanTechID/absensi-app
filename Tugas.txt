@@ -1,71 +1,79 @@
+Pertemuan 6 - Customisasi Form & Table di Filament: Absensi & Overtime
+🎯 Tujuan Pembelajaran
+Setelah pertemuan ini, mahasiswa diharapkan mampu:
+
+Membuat Form Filament kustom dengan validasi dinamis.
+
+Menangani absensi harian dan absensi lembur (overtime) secara otomatis.
+
+Menggunakan Laravel Eloquent & Filament Hooks untuk memproses logika sebelum menyimpan data.
+
+Menambahkan field kondisional (misal: alasan overtime muncul hanya jika lembur).
+
 📘 Materi Pembelajaran
-1. Konsep Customisasi Form & Table
-Secara default, Filament membuat CRUD otomatis dengan form dan tabel sederhana.
-Namun, kita bisa mengubah tampilan dan fungsi dengan menambahkan komponen-komponen berikut:
+1. Konsep Absensi & Overtime
+Kondisi
+Aksi
+Karyawan melakukan absensi pertama di hari itu
 
-Search
-Komponen
-Kegunaan
-TextInput
+Disimpan sebagai absensi normal
 
-Input teks biasa
+Karyawan melakukan absensi kedua di hari yang sama
 
-DatePicker / DateTimePicker
+Disimpan sebagai absensi overtime (lembur)
 
-Pilihan tanggal / waktu
+Jika absensi overtime
 
-FileUpload
+Field “Alasan Overtime” wajib diisi
 
-Upload file atau foto
-
-Select
-
-Dropdown pilihan (termasuk relasi)
-
-Toggle
-
-Switch On/Off
-
-Textarea
-
-Input teks panjang
-
-ColorPicker
-
-Pilih warna
-
-RichEditor
-
-Input teks dengan format HTML
-
-2. Menyiapkan Tabel Absensi
-Kita akan buat tabel baru bernama absensis untuk menyimpan data kehadiran harian.
-
-Migration
+Struktur tabel absensi:
 
 
 Copy
+id | karyawan_id | tanggal | waktu_masuk | waktu_pulang | is_overtime | alasan_overtime | foto_masuk | foto_pulang
+2. Menyiapkan Tabel Absensi
+Kita akan buat tabel baru bernama absensis untuk menyimpan data kehadiran harian.
+
+- Migration Absensi
+
+Copy
 php artisan make:model Absensi -m
-database/migrations/xxxx_xx_xx_create_absensis_table.php
+- Edit Migration
+database/migrations/2025_10_10_000000_create_absensis_table.php
 
 
 Copy
 Schema::create('absensis', function (Blueprint $table) {
     $table->id();
     $table->foreignId('karyawan_id')->constrained()->cascadeOnDelete();
+    $table->date('tanggal');
     $table->timestamp('waktu_masuk')->nullable();
     $table->timestamp('waktu_pulang')->nullable();
+    $table->boolean('is_overtime')->default(false);
+    $table->string('alasan_overtime')->nullable();
     $table->string('foto_masuk')->nullable();
     $table->string('foto_pulang')->nullable();
-    $table->string('status')->default('Hadir'); // Hadir, Izin, Sakit, dll.
     $table->timestamps();
 });
-Lalu:
+3. Model Relasi
+app/Models/Absensi.php
 
 
 Copy
-php artisan migrate
-3. Menambahkan Relasi Model
+class Absensi extends Model
+{
+    use HasFactory;
+
+    protected $fillable = [
+        'karyawan_id', 'tanggal', 'waktu_masuk', 'waktu_pulang',
+        'is_overtime', 'alasan_overtime', 'foto_masuk', 'foto_pulang'
+    ];
+
+    public function karyawan()
+    {
+        return $this->belongsTo(Karyawan::class);
+    }
+}
 app/Models/Karyawan.php
 
 
@@ -74,225 +82,226 @@ public function absensis()
 {
     return $this->hasMany(Absensi::class);
 }
-app/Models/Absensi.php
-
-
-Copy
-public function karyawan()
-{
-    return $this->belongsTo(Karyawan::class);
-}
-4. Membuat Filament Resource
+4. Membuat Resource Filament
 
 Copy
 php artisan make:filament-resource Absensi
-5. Kustomisasi Form Absensi
-Buka file app/Filament/Resources/AbsensiResource.php, lalu ubah bagian form() menjadi seperti ini:
+5. Form Absensi dengan Logika Overtime
+Edit app/Filament/Resources/AbsensiResource.php
 
 
 Copy
-use Filament\Forms;
-use Filament\Forms\Components\FileUpload;
-use Filament\Forms\Components\DateTimePicker;
-use Filament\Forms\Components\Select;
-
 public static function form(Form $form): Form
 {
     return $form->schema([
-        Select::make('karyawan_id')
-            ->label('Nama Karyawan')
+        Forms\Components\Select::make('karyawan_id')
+            ->label('Karyawan')
             ->relationship('karyawan', 'nama_karyawan')
+            ->required()
             ->searchable()
+            ->preload(),
+
+        Forms\Components\DatePicker::make('tanggal')
+            ->label('Tanggal')
+            ->default(now())
             ->required(),
 
-        DateTimePicker::make('waktu_masuk')
+        Forms\Components\TimePicker::make('waktu_masuk')
             ->label('Waktu Masuk')
-            ->seconds(false)
-            ->default(now()),
-
-        FileUpload::make('foto_masuk')
-            ->label('Foto Masuk')
-            ->directory('foto_absensi')
-            ->image()
-            ->imageEditor()
             ->required(),
 
-        DateTimePicker::make('waktu_pulang')
+        Forms\Components\TimePicker::make('waktu_pulang')
             ->label('Waktu Pulang')
-            ->seconds(false)
-            ->nullable(),
-
-        FileUpload::make('foto_pulang')
-            ->label('Foto Pulang')
-            ->directory('foto_absensi')
-            ->image()
-            ->imageEditor()
-            ->nullable(),
-
-        Select::make('status')
-            ->label('Status')
-            ->options([
-                'Hadir' => 'Hadir',
-                'Izin' => 'Izin',
-                'Sakit' => 'Sakit',
-                'Cuti' => 'Cuti',
-            ])
-            ->default('Hadir')
             ->required(),
+
+        Forms\Components\FileUpload::make('foto_masuk')
+            ->label('Foto Masuk')
+            ->directory('absensi/foto_masuk')
+            ->image(),
+
+        Forms\Components\FileUpload::make('foto_pulang')
+            ->label('Foto Pulang')
+            ->directory('absensi/foto_pulang')
+            ->image(),
+
+        Forms\Components\Toggle::make('is_overtime')
+            ->label('Apakah Overtime?')
+            ->reactive(),
+
+        Forms\Components\Textarea::make('alasan_overtime')
+            ->label('Alasan Overtime')
+            ->visible(fn ($get) => $get('is_overtime'))
+            ->required(fn ($get) => $get('is_overtime')),
     ])->columns(2);
 }
-6. Menampilkan Data di Table
-Masih di AbsensiResource.php, ubah bagian table() menjadi:
+6. Menentukan Overtime Otomatis (Hooks)
+Tambahkan di AbsensiResource → beforeSave() hook di Page CreateAbsensi atau langsung di saving() model event.
+
+app/Filament/Resources/AbsensiResource/Pages/CreateAbsensi.php
 
 
 Copy
-use Filament\Tables;
+protected function mutateFormDataBeforeCreate(array $data): array
+{
+    // Cek apakah karyawan sudah absen di tanggal ini
+    $exists = \App\Models\Absensi::where('karyawan_id', $data['karyawan_id'])
+        ->where('tanggal', $data['tanggal'])
+        ->exists();
 
+    // Jika sudah ada absensi hari ini → ini lembur
+    if ($exists) {
+        $data['is_overtime'] = true;
+    } else {
+        $data['is_overtime'] = false;
+    }
+
+    // Jika overtime tapi tidak isi alasan
+    if ($data['is_overtime'] && empty($data['alasan_overtime'])) {
+        throw new \Filament\Notifications\NotificationException('Alasan lembur wajib diisi!');
+    }
+
+    return $data;
+}
+💡 Alternatif: bisa juga taruh di model event booted() dalam Absensi.php agar berlaku di semua tempat, tidak hanya Filament.
+
+7. Menampilkan Kolom di Tabel Filament
+
+Copy
 public static function table(Table $table): Table
 {
     return $table->columns([
-        Tables\Columns\TextColumn::make('karyawan.nama_karyawan')->label('Nama Karyawan')->searchable(),
-        Tables\Columns\TextColumn::make('waktu_masuk')->dateTime('d M Y H:i')->label('Masuk'),
-        Tables\Columns\TextColumn::make('waktu_pulang')->dateTime('d M Y H:i')->label('Pulang'),
-        Tables\Columns\ImageColumn::make('foto_masuk')->label('Foto Masuk')->height(60),
-        Tables\Columns\ImageColumn::make('foto_pulang')->label('Foto Pulang')->height(60),
-        Tables\Columns\BadgeColumn::make('status')
-            ->colors([
-                'success' => 'Hadir',
-                'warning' => 'Izin',
-                'danger' => 'Sakit',
-                'gray' => 'Cuti',
-            ]),
-    ])
-    ->filters([
-        Tables\Filters\SelectFilter::make('status')->options([
-            'Hadir' => 'Hadir',
-            'Izin' => 'Izin',
-            'Sakit' => 'Sakit',
-            'Cuti' => 'Cuti',
-        ]),
-    ])
-    ->actions([
-        Tables\Actions\EditAction::make(),
-        Tables\Actions\DeleteAction::make(),
+        Tables\Columns\TextColumn::make('karyawan.nama_karyawan')->label('Karyawan')->sortable()->searchable(),
+        Tables\Columns\TextColumn::make('tanggal')->label('Tanggal')->date(),
+        Tables\Columns\TextColumn::make('waktu_masuk')->label('Masuk')->time(),
+        Tables\Columns\TextColumn::make('waktu_pulang')->label('Pulang')->time(),
+        Tables\Columns\IconColumn::make('is_overtime')
+            ->boolean()
+            ->label('Lembur'),
+        Tables\Columns\TextColumn::make('alasan_overtime')
+            ->label('Alasan Overtime')
+            ->toggleable()
+            ->limit(30),
     ]);
 }
-7. Menambahkan Fitur Kamera (Opsional)
-Jika ingin mahasiswa belajar capture foto langsung dari kamera, gunakan library seperti WebcamJS di form Filament.
+8. Validasi di Model (Opsional)
+Tambahkan validasi otomatis di Absensi model:
 
-Konsepnya:
 
-Tambahkan field foto_masuk (string path file).
+Copy
+protected static function booted()
+{
+    static::creating(function ($absen) {
+        // Jika sudah absen hari ini → ubah jadi overtime
+        $exists = Absensi::where('karyawan_id', $absen->karyawan_id)
+            ->where('tanggal', $absen->tanggal)
+            ->exists();
 
-Tambahkan custom blade view untuk form yang memanggil kamera HTML5 (navigator.mediaDevices.getUserMedia()).
+        $absen->is_overtime = $exists;
 
-Setelah capture, hasil foto dikirim ke server (base64 → disimpan sebagai file).
-
-Untuk tahap perkuliahan, cukup gunakan FileUpload dulu (upload manual dari kamera/galeri).
-
-🧪 Langkah Praktikum
+        if ($absen->is_overtime && empty($absen->alasan_overtime)) {
+            throw new \Exception("Alasan lembur wajib diisi!");
+        }
+    });
+}
+🧪 Langkah Praktikum Mahasiswa
 Search
 Langkah
 Deskripsi
 Perintah
 1
 
-Buat model dan migration Absensi
+Buat migration & model Absensi
 
 php artisan make:model Absensi -m
 
 2
 
-Tambahkan relasi di model Karyawan dan Absensi
+Tambahkan relasi hasMany di Karyawan
 
-edit file model
+edit Karyawan.php
 
 3
-
-Jalankan migrasi
-
-php artisan migrate
-
-4
 
 Buat Filament Resource Absensi
 
 php artisan make:filament-resource Absensi
 
+4
+
+Custom form untuk menampilkan field overtime & alasan lembur
+
+edit AbsensiResource.php
+
 5
 
-Ubah form & table di AbsensiResource.php
+Tambahkan logika otomatis di CreateAbsensi.php
 
-edit manual
+edit file di Resources/AbsensiResource/Pages/
 
 6
 
-Tambahkan beberapa data absensi via /admin
+Jalankan seeder dan test absensi ganda di hari sama → pastikan record kedua jadi lembur
 
-buka dashboard
+php artisan serve
 
 7
 
-Pastikan data tampil lengkap (nama karyawan, jam masuk/pulang, foto)
+Commit hasil ke GitHub
 
-test aplikasi
+git add . && git commit -m "Add Absensi & Overtime logic" && git push origin main
 
 🎯 Output yang Diharapkan
-Tabel Absensi muncul di menu sidebar.
+Form absensi menampilkan semua field (termasuk upload foto).
 
-Mahasiswa bisa menambahkan record absensi lengkap dengan:
+Absensi pertama hari itu = normal.
 
-Karyawan
+Absensi kedua hari itu = lembur (is_overtime = true).
 
-Waktu masuk & pulang
+Jika lembur, field alasan overtime wajib diisi.
 
-Foto (upload manual)
-
-Status kehadiran
-
-Dashboard menampilkan tabel absensi dengan gambar & badge warna.
+Data tampil rapi di Filament Table.
 
 💡 Tugas / Challenge
-Tambahkan validasi agar satu karyawan tidak bisa absen dua kali di hari yang sama.
+Tambahkan filter di tabel absensi untuk menampilkan hanya data lembur (is_overtime = true).
 
-Tambahkan kolom tanggal_absen (DATE) otomatis ($table->date('tanggal')->default(now())).
+Tambahkan validasi agar satu karyawan tidak bisa absen dua kali dengan waktu masuk yang sama.
 
-Tampilkan total absensi per karyawan di KaryawanResource (gunakan count() relasi absensis).
+Tambahkan notifikasi Filament yang muncul saat data disimpan:
 
-(Bonus) Integrasikan kamera langsung menggunakan JavaScript MediaDevices.
 
+Copy
+Notification::make()
+    ->title('Absensi Berhasil Disimpan!')
+    ->success()
+    ->send();
 📚 Rangkuman
-Komponen
-Fungsi
-FileUpload
+Konsep
+Penjelasan
+hasMany / belongsTo
 
-Upload dan preview foto absensi
+Menghubungkan Karyawan dengan Absensi
 
-Select
+mutateFormDataBeforeCreate()
 
-Dropdown pilihan (relasi & status)
+Hook Filament sebelum data disimpan
 
-DateTimePicker
+Kondisi visible(fn($get))
 
-Input waktu masuk/pulang
+Menampilkan field dinamis
 
-BadgeColumn
+Validasi kondisional
 
-Warna otomatis berdasarkan status
+Field wajib diisi tergantung kondisi
 
-relationship()
+is_overtime
 
-Menghubungkan tabel relasi di Filament
+Boolean penanda lembur otomatis
 
-🧠 Kesimpulan
-Setelah pertemuan ini mahasiswa mampu:
+✅ Kesimpulan
+Setelah pertemuan ini, mahasiswa sudah:
 
-Membuat form absensi yang lengkap di Filament.
+Menguasai pembuatan form dinamis di Filament.
 
-Mengatur tampilan tabel absensi agar lebih informatif.
+Memahami logika relasional dinamis (absensi → overtime).
 
-Memahami bagaimana relasi Karyawan → Absensi bekerja dalam CRUD Filament.
-
-Siap melanjutkan ke Pertemuan 7: Autentikasi & Manajemen Role (Admin vs User).
-
-
+Siap membuat aplikasi absensi yang lebih realistis dan cerdas.

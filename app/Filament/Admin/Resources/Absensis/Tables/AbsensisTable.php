@@ -6,10 +6,13 @@ use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
+use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\ImageColumn;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Filters\Filter;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 
 class AbsensisTable
 {
@@ -18,46 +21,43 @@ class AbsensisTable
         return $table
             ->columns([
                 TextColumn::make('karyawan.nama_karyawan')
-                    ->label('Nama Karyawan')
-                    ->searchable()
-                    ->sortable(),
+                    ->label('Karyawan')
+                    ->sortable()
+                    ->searchable(),
                 TextColumn::make('tanggal')
-                    ->date('d M Y')
                     ->label('Tanggal')
+                    ->date('d M Y')
                     ->sortable(),
                 TextColumn::make('waktu_masuk')
-                    ->dateTime('d M Y H:i')
                     ->label('Masuk')
+                    ->time('H:i')
                     ->sortable(),
                 TextColumn::make('waktu_pulang')
-                    ->dateTime('d M Y H:i')
                     ->label('Pulang')
+                    ->time('H:i')
                     ->sortable(),
+                IconColumn::make('is_overtime')
+                    ->boolean()
+                    ->label('Lembur')
+                    ->sortable(),
+                TextColumn::make('alasan_overtime')
+                    ->label('Alasan Overtime')
+                    ->toggleable()
+                    ->limit(30),
                 ImageColumn::make('foto_masuk')
                     ->label('Foto Masuk')
-                    ->height(60),
+                    ->height(50)
+                    ->toggleable(isToggledHiddenByDefault: true),
                 ImageColumn::make('foto_pulang')
                     ->label('Foto Pulang')
-                    ->height(60),
-                TextColumn::make('status')
-                    ->badge()
-                    ->color(fn (string $state): string => match ($state) {
-                        'Hadir' => 'success',
-                        'Izin' => 'warning',
-                        'Sakit' => 'danger',
-                        'Cuti' => 'gray',
-                        default => 'gray',
-                    })
-                    ->sortable(),
+                    ->height(50)
+                    ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
-                SelectFilter::make('status')
-                    ->options([
-                        'Hadir' => 'Hadir',
-                        'Izin' => 'Izin',
-                        'Sakit' => 'Sakit',
-                        'Cuti' => 'Cuti',
-                    ]),
+                // Challenge #1: Filter hanya data lembur (is_overtime = true)
+                Filter::make('is_overtime')
+                    ->label('Hanya Data Lembur')
+                    ->query(fn (Builder $query): Builder => $query->where('is_overtime', true)),
                 SelectFilter::make('karyawan_id')
                     ->relationship('karyawan', 'nama_karyawan')
                     ->label('Karyawan')

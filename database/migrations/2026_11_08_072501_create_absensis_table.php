@@ -14,12 +14,13 @@ return new class extends Migration
         Schema::create('absensis', function (Blueprint $table) {
             $table->id();
             $table->foreignId('karyawan_id')->constrained()->cascadeOnDelete();
-            $table->date('tanggal')->nullable();
+            $table->date('tanggal');
             $table->timestamp('waktu_masuk')->nullable();
             $table->timestamp('waktu_pulang')->nullable();
+            $table->boolean('is_overtime')->default(false);
+            $table->string('alasan_overtime')->nullable();
             $table->string('foto_masuk')->nullable();
             $table->string('foto_pulang')->nullable();
-            $table->string('status')->default('Hadir'); // Hadir, Izin, Sakit, Cuti
             $table->timestamps();
         });
     }

@@ -14,108 +14,83 @@ class AbsensiSeeder extends Seeder
      */
     public function run(): void
     {
-        $today = Carbon::today();
-        $yesterday = Carbon::yesterday();
+        $today = Carbon::today()->toDateString();
+        $yesterday = Carbon::yesterday()->toDateString();
 
         $karyawans = Karyawan::all();
         if ($karyawans->isEmpty()) {
             return;
         }
 
+        $budi = $karyawans->get(0);
+        $siti = $karyawans->get(1);
+        $ahmad = $karyawans->get(2);
+
         $records = [
-            // Kemarin
+            // Kemarin - Budi (Reguler)
             [
-                'karyawan' => $karyawans->get(0),
-                'tanggal' => $yesterday->toDateString(),
-                'waktu_masuk' => $yesterday->copy()->setHour(7)->setMinute(55),
-                'waktu_pulang' => $yesterday->copy()->setHour(17)->setMinute(5),
-                'foto_masuk' => null,
-                'foto_pulang' => null,
-                'status' => 'Hadir',
+                'karyawan_id' => $budi->id,
+                'tanggal' => $yesterday,
+                'waktu_masuk' => "{$yesterday} 08:00:00",
+                'waktu_pulang' => "{$yesterday} 17:00:00",
+                'is_overtime' => false,
+                'alasan_overtime' => null,
             ],
+            // Hari Ini - Budi (Absensi Pertama: Reguler)
             [
-                'karyawan' => $karyawans->get(1),
-                'tanggal' => $yesterday->toDateString(),
-                'waktu_masuk' => $yesterday->copy()->setHour(8)->setMinute(0),
-                'waktu_pulang' => $yesterday->copy()->setHour(17)->setMinute(0),
-                'foto_masuk' => null,
-                'foto_pulang' => null,
-                'status' => 'Hadir',
+                'karyawan_id' => $budi->id,
+                'tanggal' => $today,
+                'waktu_masuk' => "{$today} 07:55:00",
+                'waktu_pulang' => "{$today} 17:00:00",
+                'is_overtime' => false,
+                'alasan_overtime' => null,
             ],
+            // Hari Ini - Budi (Absensi Kedua di hari yang sama: Lembur / Overtime)
             [
-                'karyawan' => $karyawans->get(2),
-                'tanggal' => $yesterday->toDateString(),
-                'waktu_masuk' => $yesterday->copy()->setHour(8)->setMinute(10),
-                'waktu_pulang' => $yesterday->copy()->setHour(17)->setMinute(30),
-                'foto_masuk' => null,
-                'foto_pulang' => null,
-                'status' => 'Hadir',
+                'karyawan_id' => $budi->id,
+                'tanggal' => $today,
+                'waktu_masuk' => "{$today} 18:00:00",
+                'waktu_pulang' => "{$today} 21:00:00",
+                'is_overtime' => true,
+                'alasan_overtime' => 'Deploy rilis modul absensi & overtime ke server produksi',
             ],
-            // Hari Ini
+            // Hari Ini - Siti (Absensi Pertama: Reguler)
             [
-                'karyawan' => $karyawans->get(0),
-                'tanggal' => $today->toDateString(),
-                'waktu_masuk' => $today->copy()->setHour(7)->setMinute(50),
-                'waktu_pulang' => $today->copy()->setHour(17)->setMinute(0),
-                'foto_masuk' => null,
-                'foto_pulang' => null,
-                'status' => 'Hadir',
+                'karyawan_id' => $siti->id,
+                'tanggal' => $today,
+                'waktu_masuk' => "{$today} 08:02:00",
+                'waktu_pulang' => "{$today} 17:05:00",
+                'is_overtime' => false,
+                'alasan_overtime' => null,
             ],
+            // Hari Ini - Siti (Absensi Kedua: Lembur)
             [
-                'karyawan' => $karyawans->get(1),
-                'tanggal' => $today->toDateString(),
-                'waktu_masuk' => $today->copy()->setHour(8)->setMinute(5),
-                'waktu_pulang' => null,
-                'foto_masuk' => null,
-                'foto_pulang' => null,
-                'status' => 'Hadir',
+                'karyawan_id' => $siti->id,
+                'tanggal' => $today,
+                'waktu_masuk' => "{$today} 17:30:00",
+                'waktu_pulang' => "{$today} 20:30:00",
+                'is_overtime' => true,
+                'alasan_overtime' => 'Penyusunan laporan bulanan payroll dan insentif lembur tim',
             ],
+            // Hari Ini - Ahmad (Hanya Reguler)
             [
-                'karyawan' => $karyawans->get(2),
-                'tanggal' => $today->toDateString(),
-                'waktu_masuk' => null,
-                'waktu_pulang' => null,
-                'foto_masuk' => null,
-                'foto_pulang' => null,
-                'status' => 'Izin',
-            ],
-            [
-                'karyawan' => $karyawans->get(3),
-                'tanggal' => $today->toDateString(),
-                'waktu_masuk' => null,
-                'waktu_pulang' => null,
-                'foto_masuk' => null,
-                'foto_pulang' => null,
-                'status' => 'Sakit',
-            ],
-            [
-                'karyawan' => $karyawans->get(4),
-                'tanggal' => $today->toDateString(),
-                'waktu_masuk' => null,
-                'waktu_pulang' => null,
-                'foto_masuk' => null,
-                'foto_pulang' => null,
-                'status' => 'Cuti',
+                'karyawan_id' => $ahmad->id,
+                'tanggal' => $today,
+                'waktu_masuk' => "{$today} 08:10:00",
+                'waktu_pulang' => "{$today} 17:15:00",
+                'is_overtime' => false,
+                'alasan_overtime' => null,
             ],
         ];
 
         foreach ($records as $item) {
-            if (! $item['karyawan']) {
-                continue;
-            }
-
             Absensi::firstOrCreate(
                 [
-                    'karyawan_id' => $item['karyawan']->id,
+                    'karyawan_id' => $item['karyawan_id'],
                     'tanggal' => $item['tanggal'],
-                ],
-                [
                     'waktu_masuk' => $item['waktu_masuk'],
-                    'waktu_pulang' => $item['waktu_pulang'],
-                    'foto_masuk' => $item['foto_masuk'],
-                    'foto_pulang' => $item['foto_pulang'],
-                    'status' => $item['status'],
-                ]
+                ],
+                $item
             );
         }
     }
