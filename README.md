@@ -1,72 +1,484 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+<div align="center">
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+<img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="300" alt="Laravel Logo">
 
-## About Laravel
+# 🗂️ Absensi App
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+**Sistem Manajemen Absensi Karyawan berbasis Web**
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+[![Laravel](https://img.shields.io/badge/Laravel-12.x-FF2D20?style=for-the-badge&logo=laravel&logoColor=white)](https://laravel.com)
+[![Filament](https://img.shields.io/badge/Filament-5.x-FDB538?style=for-the-badge&logo=filament&logoColor=white)](https://filamentphp.com)
+[![PHP](https://img.shields.io/badge/PHP-8.2+-777BB4?style=for-the-badge&logo=php&logoColor=white)](https://php.net)
+[![MySQL](https://img.shields.io/badge/MySQL-8.0+-4479A1?style=for-the-badge&logo=mysql&logoColor=white)](https://mysql.com)
+[![License](https://img.shields.io/badge/License-MIT-green?style=for-the-badge)](LICENSE)
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+*Proyek UTS – Mata Kuliah Pemrograman Web Lanjut*
 
-## Learning Laravel
+</div>
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework. You can also check out [Laravel Learn](https://laravel.com/learn), where you will be guided through building a modern Laravel application.
+---
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+## 📋 Daftar Isi
 
-## Laravel Sponsors
+- [Tentang Proyek](#-tentang-proyek)
+- [Fitur Utama](#-fitur-utama)
+- [Tech Stack](#-tech-stack)
+- [Arsitektur](#-arsitektur)
+- [Diagram Database](#-diagram-database)
+- [Role & Permission](#-role--permission)
+- [Instalasi](#-instalasi)
+- [Konfigurasi](#-konfigurasi)
+- [Seeder & Demo Data](#-seeder--demo-data)
+- [Struktur Direktori](#-struktur-direktori)
+- [Screenshots](#-screenshots)
+- [Kontribusi](#-kontribusi)
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+---
 
-### Premium Partners
+## 🎯 Tentang Proyek
 
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
+**Absensi App** adalah sistem manajemen absensi karyawan berbasis web yang dibangun menggunakan **Laravel 12** dan **Filament v5**. Aplikasi ini dirancang untuk mengelola data karyawan, departemen, tim, dan catatan absensi secara terintegrasi dengan sistem otorisasi berbasis peran (RBAC).
 
-## Contributing
+Proyek ini merupakan tugas UTS mata kuliah **Pemrograman Web Lanjut** yang mengimplementasikan best practices modern dalam pengembangan aplikasi web enterprise.
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+---
 
-## Code of Conduct
+## ✨ Fitur Utama
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+### 👥 Manajemen Organisasi
+| Fitur | Deskripsi |
+|-------|-----------|
+| **Departemen** | CRUD departemen perusahaan |
+| **Tim/Unit** | Pengelompokan karyawan per tim dalam departemen |
+| **Karyawan** | Data master karyawan lengkap dengan posisi & jabatan |
+| **User Management** | Manajemen akun pengguna dengan role assignment |
 
-## Security Vulnerabilities
+### 🕐 Manajemen Absensi
+| Fitur | Deskripsi |
+|-------|-----------|
+| **Pencatatan Absensi** | Input waktu masuk & waktu pulang |
+| **Deteksi Lembur Otomatis** | Sistem otomatis mendeteksi & menandai lembur |
+| **Alasan Lembur** | Form pengisian alasan ketika lembur terdeteksi |
+| **Filter & Pencarian** | Filter absensi berdasarkan tanggal, karyawan, status lembur |
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+### 📊 Laporan & Ekspor
+| Fitur | Deskripsi |
+|-------|-----------|
+| **Laporan Absensi** | Rekap absensi dengan filter periode & departemen |
+| **Ekspor PDF** | Generate laporan absensi dalam format PDF (DomPDF) |
+| **Ekspor Excel** | Ekspor data ke format XLSX (OpenSpout) |
 
-## License
+### 🔐 Keamanan & Akses
+| Fitur | Deskripsi |
+|-------|-----------|
+| **RBAC** | Role-Based Access Control dengan 8 level peran |
+| **Hierarki Peran** | Manajer hanya bisa melihat data bawahannya |
+| **Filament Shield** | Manajemen permission granular per resource |
+| **Policy** | Laravel Policy untuk kontrol akses di level model |
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
-# absensi-app
+### ⚙️ Konfigurasi & Branding
+| Fitur | Deskripsi |
+|-------|-----------|
+| **App Branding** | Kustomisasi nama, logo, dan warna aplikasi |
+| **App Settings** | Pengaturan aplikasi tersimpan di database |
 
-## Authentication and role access
+---
 
-Sign in at `/admin/login`. Admins land on the Filament dashboard; other assigned roles land on the attendance list. Admins can view filtered attendance reports at `/admin/laporan-absensi`, manage users at `/admin/users`, and manage roles/permissions with Filament Shield at `/admin/shield/roles`.
+## 🛠️ Tech Stack
 
-Admins can update the application title and upload its logo from **Pengaturan → Judul & Logo**. Uploaded logos are stored on Laravel's public disk; run `php artisan storage:link` if the public storage link has not been created.
+### Backend
+- **[Laravel 12](https://laravel.com)** — PHP Framework
+- **[Filament v5](https://filamentphp.com)** — Admin Panel & UI
+- **[Spatie Laravel Permission v6](https://spatie.be/docs/laravel-permission)** — RBAC
+- **[Filament Shield](https://filamentphp.com/plugins/bezhansalleh-shield)** — Permission UI
+- **[barryvdh/laravel-dompdf](https://github.com/barryvdh/laravel-dompdf)** — PDF Generation
+- **[OpenSpout](https://github.com/openspout/openspout)** — Excel Export
 
-The attendance report includes an export menu for Excel (`.xlsx`) and PDF. Both files use the selected date range and are restricted to admins.
+### Frontend
+- **Tailwind CSS** (via Filament)
+- **Alpine.js** (via Filament)
+- **Vite** — Asset bundling
 
-For an existing database, run `php artisan migrate` to map legacy attendance permissions to Filament Shield's existing Absensi resource permissions while preserving role assignments.
+### Database
+- **MySQL 8.0+**
 
-Run `php artisan db:seed` to create the application's roles and sample accounts. All employee roles can create attendance and view their own records. Leaders can view lower-ranked employees in their team, department managers can view lower-ranked employees in their department, and admins can view all attendance. Department, team, and employee master data are admin-only.
+### Development Tools
+- **PHP 8.2+**
+- **Composer**
+- **Node.js & NPM**
+
+---
+
+## 🏗️ Arsitektur
+
+```
+absensi-app/
+├── app/
+│   ├── Filament/Admin/
+│   │   ├── Pages/              # Halaman kustom (Laporan, Branding)
+│   │   └── Resources/          # CRUD Resources
+│   │       ├── Absensis/       # Manajemen Absensi
+│   │       ├── Departemens/    # Manajemen Departemen
+│   │       ├── Karyawans/      # Manajemen Karyawan
+│   │       ├── Teams/          # Manajemen Tim
+│   │       └── Users/          # Manajemen User
+│   ├── Http/
+│   │   ├── Controllers/        # AttendanceReportExportController
+│   │   └── Responses/          # FilamentLoginResponse (redirect by role)
+│   ├── Models/                 # Eloquent Models
+│   ├── Policies/               # Authorization Policies
+│   ├── Providers/              # Service Providers
+│   └── Services/
+│       └── RoleHierarchy.php   # Role hierarchy logic
+├── database/
+│   ├── migrations/             # Database schema
+│   └── seeders/                # Demo data seeders
+└── resources/views/
+    └── filament/admin/pages/   # Blade views (Laporan, Branding)
+```
+
+---
+
+## 🗄️ Diagram Database
+
+```
+┌─────────────────┐     ┌─────────────────┐     ┌─────────────────┐
+│   departemens   │     │      teams      │     │    karyawans    │
+├─────────────────┤     ├─────────────────┤     ├─────────────────┤
+│ id              │────<│ id              │────<│ id              │
+│ nama_departemen │     │ nama_tim        │     │ nama_karyawan   │
+│ created_at      │     │ departemen_id   │     │ nik             │
+│ updated_at      │     │ created_at      │     │ team_id         │
+└─────────────────┘     │ updated_at      │     │ posisi          │
+                        └─────────────────┘     │ no_telp         │
+                                                │ alamat          │
+                        ┌─────────────────┐     │ created_at      │
+                        │     users       │     │ updated_at      │
+                        ├─────────────────┤     └────────┬────────┘
+                        │ id              │              │
+                        │ name            │              │
+                        │ email           │       ┌──────┘
+                        │ password        │       │
+                        │ position        │     ┌─▼───────────────┐
+                        │ created_at      │     │    absensis     │
+                        │ updated_at      │     ├─────────────────┤
+                        └────────┬────────┘     │ id              │
+                                 │              │ karyawan_id     │
+                                 └─────────────>│ user_id         │
+                                               │ tanggal         │
+                                               │ waktu_masuk     │
+                                               │ waktu_pulang    │
+                                               │ is_overtime     │
+                                               │ alasan_overtime │
+                                               │ created_at      │
+                                               │ updated_at      │
+                                               └─────────────────┘
+```
+
+---
+
+## 🔐 Role & Permission
+
+### Hierarki Peran (8 Level)
+
+```
+admin
+  └── direktur
+        └── manajer_operasional
+              └── manajer_hrd
+                    └── supervisor
+                          └── team_leader
+                                └── karyawan_senior
+                                      └── karyawan
+```
+
+### Matriks Permission
+
+| Permission | admin | direktur | manajer_operasional | manajer_hrd | supervisor | team_leader | karyawan_senior | karyawan |
+|-----------|:-----:|:--------:|:-------------------:|:-----------:|:----------:|:-----------:|:---------------:|:--------:|
+| `attendance.view` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| `attendance.create` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| `attendance.edit` | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ | ❌ | ❌ |
+| `attendance.delete` | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| `attendance.view_all` | ✅ | ✅ | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ |
+
+> **Role Hierarchy:** Setiap peran hanya dapat melihat data absensi dari karyawan yang berada di bawah hierarkinya.
+
+---
+
+## 🚀 Instalasi
+
+### Prasyarat
+
+Pastikan sistem Anda memiliki:
+- **PHP** >= 8.2
+- **Composer** >= 2.x
+- **Node.js** >= 18.x & **NPM**
+- **MySQL** >= 8.0
+- **Git**
+
+### Langkah Instalasi
+
+#### 1. Clone Repository
+
+```bash
+git clone https://github.com/NanTechID/absensi-app.git
+cd absensi-app
+```
+
+#### 2. Install Dependencies PHP
+
+```bash
+composer install
+```
+
+#### 3. Install Dependencies Node.js
+
+```bash
+npm install
+```
+
+#### 4. Konfigurasi Environment
+
+```bash
+cp .env.example .env
+php artisan key:generate
+```
+
+#### 5. Konfigurasi Database
+
+Edit file `.env`:
+```env
+DB_CONNECTION=mysql
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_DATABASE=absensi_db
+DB_USERNAME=root
+DB_PASSWORD=your_password
+```
+
+#### 6. Jalankan Migrasi & Seeder
+
+```bash
+php artisan migrate
+php artisan db:seed
+```
+
+#### 7. Build Assets
+
+```bash
+npm run build
+```
+
+#### 8. Jalankan Server
+
+```bash
+php artisan serve
+```
+
+Akses aplikasi di: **http://localhost:8000/admin**
+
+---
+
+## ⚙️ Konfigurasi
+
+### Publish Config (Opsional)
+
+```bash
+# Publish Spatie Permission config
+php artisan vendor:publish --provider="Spatie\Permission\PermissionServiceProvider"
+
+# Publish Filament Shield config
+php artisan vendor:publish --tag="filament-shield-config"
+```
+
+### Storage Link
+
+```bash
+php artisan storage:link
+```
+
+### Cache Clear
+
+```bash
+php artisan optimize:clear
+```
+
+---
+
+## 🌱 Seeder & Demo Data
+
+Setelah menjalankan `php artisan db:seed`, data berikut akan tersedia:
+
+### 👤 Akun Demo
+
+| Email | Password | Role | Akses |
+|-------|----------|------|-------|
+| `admin@admin.com` | `password` | **Admin** | Full access — semua fitur |
+| `direktur@example.com` | `password` | **Direktur** | Lihat semua absensi |
+| `manajer.ops@example.com` | `password` | **Manajer Operasional** | Kelola & edit absensi |
+| `manajer.hrd@example.com` | `password` | **Manajer HRD** | Kelola absensi HRD |
+| `supervisor@example.com` | `password` | **Supervisor** | Lihat & edit tim sendiri |
+| `teamlead@example.com` | `password` | **Team Leader** | Lihat tim sendiri |
+| `senior@example.com` | `password` | **Karyawan Senior** | Absensi diri sendiri |
+| `karyawan@example.com` | `password` | **Karyawan** | Absensi diri sendiri |
+
+### 🏢 Data Master
+
+- **3 Departemen**: Operasional, HRD, IT
+- **6 Tim**: Masing-masing departemen memiliki 2 tim
+- **8+ Karyawan**: Tersebar di semua departemen
+- **30+ Record Absensi**: Termasuk data lembur untuk pengujian
+
+---
+
+## 📁 Struktur Direktori Lengkap
+
+```
+absensi-app/
+├── app/
+│   ├── Filament/
+│   │   └── Admin/
+│   │       ├── Pages/
+│   │       │   ├── AppBrandingSettings.php
+│   │       │   └── LaporanAbsensi.php
+│   │       └── Resources/
+│   │           ├── Absensis/
+│   │           │   ├── Pages/
+│   │           │   │   ├── CreateAbsensi.php
+│   │           │   │   ├── EditAbsensi.php
+│   │           │   │   └── ListAbsensis.php
+│   │           │   ├── Schemas/
+│   │           │   │   └── AbsensiForm.php
+│   │           │   ├── Tables/
+│   │           │   │   └── AbsensisTable.php
+│   │           │   └── AbsensiResource.php
+│   │           ├── Departemens/        # + Schemas/ Tables/ Pages/
+│   │           ├── Karyawans/          # + Schemas/ Tables/ Pages/
+│   │           ├── Teams/              # + Schemas/ Tables/ Pages/
+│   │           └── Users/              # + Pages/
+│   ├── Http/
+│   │   ├── Controllers/
+│   │   │   └── AttendanceReportExportController.php
+│   │   └── Responses/
+│   │       └── FilamentLoginResponse.php
+│   ├── Models/
+│   │   ├── Absensi.php
+│   │   ├── AppSetting.php
+│   │   ├── Departemen.php
+│   │   ├── Karyawan.php
+│   │   ├── Team.php
+│   │   └── User.php
+│   ├── Policies/
+│   │   ├── AbsensiPolicy.php
+│   │   └── RolePolicy.php
+│   ├── Providers/
+│   │   ├── AppServiceProvider.php
+│   │   └── Filament/
+│   │       └── AdminPanelProvider.php
+│   └── Services/
+│       └── RoleHierarchy.php
+├── database/
+│   ├── migrations/
+│   │   ├── create_departemens_table.php
+│   │   ├── create_teams_table.php
+│   │   ├── create_karyawans_table.php
+│   │   ├── create_absensis_table.php
+│   │   ├── create_permission_tables.php
+│   │   ├── add_position_to_users_table.php
+│   │   ├── add_user_id_to_absensis_table.php
+│   │   ├── map_attendance_permissions_to_shield_resource.php
+│   │   └── create_app_settings_table.php
+│   └── seeders/
+│       ├── DatabaseSeeder.php
+│       ├── DepartemenSeeder.php
+│       ├── TeamSeeder.php
+│       ├── KaryawanSeeder.php
+│       ├── UserSeeder.php
+│       ├── RolePermissionSeeder.php
+│       └── AbsensiSeeder.php
+├── resources/
+│   └── views/filament/admin/pages/
+│       ├── app-branding-settings.blade.php
+│       ├── laporan-absensi.blade.php
+│       └── laporan-absensi-pdf.blade.php
+├── tests/
+│   └── Feature/
+│       ├── AppBrandingSettingsTest.php
+│       └── AttendanceVisibilityTest.php
+├── routes/
+│   └── web.php
+├── composer.json
+└── README.md
+```
+
+---
+
+## 🧪 Testing
+
+```bash
+# Jalankan semua test
+php artisan test
+
+# Jalankan test spesifik
+php artisan test --filter=AttendanceVisibilityTest
+
+# Jalankan dengan coverage (butuh Xdebug)
+php artisan test --coverage
+```
+
+---
+
+## 🔄 Perintah Artisan Berguna
+
+```bash
+# Reset & seed ulang database
+php artisan migrate:fresh --seed
+
+# Clear semua cache
+php artisan optimize:clear
+
+# Jalankan dev server lengkap (server + queue + logs + vite)
+composer run dev
+
+# Install & setup cepat
+composer run setup
+```
+
+---
+
+## 🤝 Kontribusi
+
+Pull request sangat diterima! Untuk perubahan besar, harap buka issue terlebih dahulu untuk mendiskusikan apa yang ingin Anda ubah.
+
+1. **Fork** repository ini
+2. **Buat** branch fitur (`git checkout -b feature/fitur-baru`)
+3. **Commit** perubahan (`git commit -m 'feat: tambah fitur baru'`)
+4. **Push** ke branch (`git push origin feature/fitur-baru`)
+5. **Buat** Pull Request
+
+---
+
+## 👨‍💻 Developer
+
+<div align="center">
+
+**Dibuat dengan ❤️ untuk UTS Pemrograman Web Lanjut**
+
+[![GitHub](https://img.shields.io/badge/GitHub-NanTechID-181717?style=for-the-badge&logo=github)](https://github.com/NanTechID)
+
+</div>
+
+---
+
+## 📄 Lisensi
+
+Proyek ini menggunakan lisensi [MIT](LICENSE).
+
+---
+
+<div align="center">
+
+**⭐ Jika proyek ini membantu, jangan lupa beri bintang!**
+
+</div>
