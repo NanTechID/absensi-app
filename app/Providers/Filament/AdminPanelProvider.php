@@ -2,6 +2,8 @@
 
 namespace App\Providers\Filament;
 
+use App\Models\AppSetting;
+use BezhanSalleh\FilamentShield\FilamentShieldPlugin;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
@@ -28,8 +30,22 @@ class AdminPanelProvider extends PanelProvider
             ->id('admin')
             ->path('admin')
             ->login()
+            ->brandName(fn (): string => AppSetting::currentTitle())
+            ->brandLogo(fn () => AppSetting::currentBrandLogo())
+            ->brandLogoHeight('2.5rem')
             ->colors([
                 'primary' => Color::Amber,
+            ])
+            ->resourceEditPageRedirect('index')
+            ->plugins([
+                FilamentShieldPlugin::make(),
+            ])
+            ->navigationGroups([
+                'Filament Shield',
+                'Laporan',
+                'Master Data',
+                'Data Absensi',
+                'Pengaturan',
             ])
             ->discoverResources(in: app_path('Filament/Admin/Resources'), for: 'App\Filament\Admin\Resources')
             ->discoverPages(in: app_path('Filament/Admin/Pages'), for: 'App\Filament\Admin\Pages')

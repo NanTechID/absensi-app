@@ -58,3 +58,15 @@ If you discover a security vulnerability within Laravel, please send an e-mail t
 
 The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
 # absensi-app
+
+## Authentication and role access
+
+Sign in at `/admin/login`. Admins land on the Filament dashboard; other assigned roles land on the attendance list. Admins can view filtered attendance reports at `/admin/laporan-absensi`, manage users at `/admin/users`, and manage roles/permissions with Filament Shield at `/admin/shield/roles`.
+
+Admins can update the application title and upload its logo from **Pengaturan → Judul & Logo**. Uploaded logos are stored on Laravel's public disk; run `php artisan storage:link` if the public storage link has not been created.
+
+The attendance report includes an export menu for Excel (`.xlsx`) and PDF. Both files use the selected date range and are restricted to admins.
+
+For an existing database, run `php artisan migrate` to map legacy attendance permissions to Filament Shield's existing Absensi resource permissions while preserving role assignments.
+
+Run `php artisan db:seed` to create the application's roles and sample accounts. All employee roles can create attendance and view their own records. Leaders can view lower-ranked employees in their team, department managers can view lower-ranked employees in their department, and admins can view all attendance. Department, team, and employee master data are admin-only.

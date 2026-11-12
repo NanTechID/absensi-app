@@ -1,0 +1,2156 @@
+Pertemuan 7 — Autentikasi & Role Management
+🎯 Tujuan Pembelajaran
+Pada pertemuan ini mahasiswa mampu:
+
+Mengimplementasikan sistem autentikasi menggunakan Laravel Breeze / Jetstream.
+
+Mengelola role & permission menggunakan Filament Shield.
+
+Mengatur akses menu dan halaman berdasarkan role.
+
+Mengimplementasikan skenario multi-role berdasarkan jabatan (position) karyawan.
+
+Memastikan akses sesuai aturan:
+
+Semua role bisa absensi & lihat absensinya sendiri
+
+Level atasan bisa melihat absensi bawahan sesuai struktur organisasi
+
+Administrator (admin) punya akses penuh
+
+📚 Materi Pembelajaran
+1️⃣ Autentikasi Menggunakan Laravel Breeze / Jetstream
+Laravel Breeze menyediakan autentikasi dasar (login, register, reset password).
+Laravel Jetstream menyediakan autentikasi lebih lengkap (teams, 2FA, profile, API Tokens).
+
+Instalasi Laravel Breeze (opsi yang lebih ringan)
+
+Copy
+composer require laravel/breeze --dev
+php artisan breeze:install
+npm install
+npm run build
+php artisan migrate
+Alternatif Jetstream (lebih lengkap)
+
+Copy
+composer require laravel/jetstream
+php artisan jetstream:install livewire
+npm install
+npm run build
+php artisan migrate
+Setelah ini, sistem login sudah bisa digunakan.
+
+2️⃣ Role & Permission Menggunakan Filament Shield
+Instalasi
+
+Copy
+composer require filament/shield
+php artisan shield:install
+php artisan migrate
+Ini akan mengaktifkan:
+
+Manajemen Permission
+
+Manajemen Role
+
+Middleware proteksi akses
+
+Panel konfigurasi role/permission
+
+3️⃣ Tambahkan Role Baru
+Role yang digunakan:
+admin
+
+team_member
+
+group_leader
+
+section_leader
+
+supervisor
+
+assistant_manager
+
+team_manager
+
+departement_manager
+
+Perintah membuat role
+
+Copy
+php artisan shield:role admin
+php artisan shield:role team_member
+php artisan shield:role group_leader
+php artisan shield:role section_leader
+php artisan shield:role supervisor
+php artisan shield:role assistant_manager
+php artisan shield:role team_manager
+php artisan shield:role departement_manager
+Menambahkan role ke user
+Contoh:
+
+
+Copy
+$user->assignRole('team_member');
+Role admin tidak terhubung ke tabel karyawan → user admin dibuat manual.
+
+4️⃣ Konfigurasi Akses Menu Filament berdasarkan Role
+Master Data (Departemen, Team, Position, Karyawan)
+Hanya admin yang boleh mengakses:
+
+Tambahkan pada setiap Resource:
+
+
+Copy
+public static function canViewAny(): bool
+{
+    return auth()->user()->hasRole('admin');
+}
+Atau di Filament Shield panel → centang akses hanya untuk admin.
+
+🧩 5️⃣ Aturan Akses Absensi (Core Logic)
+Semua role:
+Bisa melakukan absensi
+
+Bisa melihat histori absensi milik sendiri
+
+Hierarki Penglihatan Absensi:
+Search
+Role
+Bisa Lihat Absensi
+team_member
+
+sendiri
+
+group_leader
+
+team_member
+
+section_leader
+
+team_member, group_leader
+
+supervisor
+
+team_member, group_leader, section_leader
+
+assistant_manager
+
+team_member, group_leader, section_leader, supervisor
+
+team_manager
+
+team_member, group_leader, section_leader, assistant_manager, supervisor
+
+departement_manager
+
+semua level kecuali admin
+
+admin
+
+semua user & semua absensi
+
+📌 Penerapan di Controller / Query Builder
+Ambil posisi user:
+
+Copy
+$role = auth()->user()->getRoleNames()->first();
+Logic filtering absensi:
+
+Copy
+$user = auth()->user();
+
+switch ($user->role) {
+    case 'group_leader':
+        $allowed = ['team_member'];
+        break;
+
+    case 'section_leader':
+        $allowed = ['team_member', 'group_leader'];
+        break;
+
+    case 'supervisor':
+        $allowed = ['team_member', 'group_leader', 'section_leader'];
+        break;
+
+    case 'assistant_manager':
+        $allowed = ['team_member', 'group_leader', 'section_leader', 'supervisor'];
+        break;
+
+    case 'team_manager':
+        $allowed = ['team_member', 'group_leader', 'section_leader', 'assistant_manager', 'supervisor'];
+        break;
+
+    case 'departement_manager':
+        $allowed = ['team_member', 'group_leader', 'section_leader', 'supervisor', 'assistant_manager', 'team_manager'];
+        break;
+
+    case 'admin':
+        $allowed = ['*'];  // semua
+        break;
+
+    default:
+        $allowed = []; // user biasa hanya lihat absensi sendiri
+}
+Query ambil absensi:
+
+Copy
+if ($user->hasRole('admin')) {
+    $absensi = Absensi::all();
+} elseif ($allowed == []) {
+    $absensi = Absensi::where('user_id', $user->id)->get();
+} else {
+    $positions = Position::whereIn('key', $allowed)->pluck('id');
+    $absensi = Absensi::whereIn('position_id', $positions)->get();
+}
+🧪 6️⃣ Praktikum Pertemuan 7
+Langkah 1 — Install Autentikasi
+
+Copy
+composer require laravel/breeze --dev
+
+Copy
+php artisan breeze:install
+
+
+Copy
+npm install
+
+Copy
+npm run build
+
+
+Copy
+php artisan migrate
+Langkah 2 — Install Filament Shield
+
+Copy
+composer require filament/shield
+php artisan shield:install
+php artisan migrate
+
+Copy
+composer require bezhansalleh/filament-shield
+
+Copy
+php artisan shield:install
+
+
+Copy
+php artisan migrate
+Publish Spatie Permission
+
+Copy
+php artisan vendor:publish --provider="Spatie\Permission\PermissionServiceProvider"
+Ini akan membuat file migration seperti:
+
+
+Copy
+database/migrations/xxxx_xx_xx_xxxxxx_create_permission_tables.php
+
+Copy
+php artisan migrate
+Ini akan membuat tabel:
+
+roles
+
+permissions
+
+model_has_roles
+
+model_has_permissions
+
+role_has_permissions
+
+Langkah 3 — Tambahkan Role
+
+Copy
+php artisan permission:create-role admin
+php artisan permission:create-role team_member
+php artisan permission:create-role group_leader
+php artisan permission:create-role section_leader
+php artisan permission:create-role supervisor
+php artisan permission:create-role assistant_manager
+php artisan permission:create-role team_manager
+php artisan permission:create-role departement_manager
+
+Buat Seeder Role Permission
+
+Copy
+php artisan make:seeder RolePermissionSeeder
+
+Copy
+<?php
+
+namespace Database\Seeders;
+
+use Illuminate\Database\Seeder;
+use Spatie\Permission\Models\Role;
+use Spatie\Permission\Models\Permission;
+use App\Models\User;
+
+class RolePermissionSeeder extends Seeder
+{
+    public function run()
+    {
+        // Hapus dulu (opsional) agar idempotent
+        app()[\Spatie\Permission\PermissionRegistrar::class]->forgetCachedPermissions();
+
+        // Permissions untuk resource Attendance
+        $permissions = [
+            'attendance.create',
+            'attendance.view',            // view own / records you are allowed to see
+            'attendance.view_subordinates', // melihat daftar absensi bawahan
+            'attendance.update',
+            'attendance.delete',
+        ];
+
+        foreach ($permissions as $perm) {
+            Permission::firstOrCreate(['name' => $perm, 'guard_name' => 'web']);
+        }
+
+        // Roles
+        $roles = [
+            'admin',
+            'team_member',
+            'group_leader',
+            'section_leader',
+            'supervisor',
+            'assistant_manager',
+            'team_manager',
+            'departement_manager',
+        ];
+
+        foreach ($roles as $r) {
+            Role::firstOrCreate(['name' => $r, 'guard_name' => 'web']);
+        }
+
+        // Assign permissions:
+        // Admin => semua permission
+        $admin = Role::where('name', 'admin')->first();
+        $admin->syncPermissions($permissions);
+
+        // Non-admin : hanya boleh create & view own
+        $basicPerms = ['attendance.create', 'attendance.view'];
+        $nonAdmins = [
+            'team_member',
+            'group_leader',
+            'section_leader',
+            'supervisor',
+            'assistant_manager',
+            'team_manager',
+            'departement_manager',
+        ];
+        foreach ($nonAdmins as $r) {
+            Role::where('name', $r)->first()->syncPermissions($basicPerms);
+        }
+
+        // Beri beberapa role kemampuan melihat bawahan (sesuaikan)
+        // Misal managers & leaders boleh melihat bawahan
+        $seeSubordinates = [
+            'group_leader',
+            'section_leader',
+            'supervisor',
+            'team_manager',
+            'departement_manager',
+        ];
+        foreach ($seeSubordinates as $r) {
+            Role::where('name', $r)->first()->givePermissionTo('attendance.view_subordinates');
+        }
+
+        // Opsional: assign roles to existing users berdasarkan field `position`
+        // Perhatikan: sesuaikan nama field jika berbeda (misal 'position' di users table)
+        foreach (User::cursor() as $user) {
+            if ($user->position) {
+                $pos = strtolower($user->position); // sesuaikan normalisasi
+                if (Role::where('name', $pos)->exists()) {
+                    $user->syncRoles([$pos]);
+                }
+            }
+        }
+    }
+}
+
+Copy
+php artisan db:seed --class=RolePermissionSeeder
+Policy AttendancePolicy (aturan akses)
+Buat policy: 
+
+
+Copy
+php artisan make:policy AttendancePolicy --model=Attendance
+Isi contoh app/Policies/AttendancePolicy.php:
+
+
+Copy
+<?php
+
+namespace App\Policies;
+
+use App\Models\User;
+use App\Models\Attendance;
+use Illuminate\Auth\Access\HandlesAuthorization;
+
+class AttendancePolicy
+{
+    use HandlesAuthorization;
+
+    public function before(User $user, $ability)
+    {
+        // super admin / admin full access
+        if ($user->hasRole('admin')) {
+            return true;
+        }
+    }
+
+    public function viewAny(User $user)
+    {
+        // Rules to view list: if manager sees subordinates list, check permission
+        return $user->can('attendance.view') || $user->can('attendance.view_subordinates');
+    }
+
+    public function view(User $user, Attendance $attendance)
+    {
+        // admin already returned true by before()
+        // allow if user owns the attendance record
+        if ($attendance->user_id === $user->id) {
+            return $user->can('attendance.view');
+        }
+
+        // a manager can view subordinate's attendance if they have permission and the attendance belongs to subordinate
+        if ($user->can('attendance.view_subordinates') && $this->isSubordinate($user, $attendance->user)) {
+            return true;
+        }
+
+        return false;
+    }
+
+    public function create(User $user)
+    {
+        return $user->can('attendance.create');
+    }
+
+    public function update(User $user, Attendance $attendance)
+    {
+        // only admin allowed (covered by before). non-admin false.
+        return false;
+    }
+
+    public function delete(User $user, Attendance $attendance)
+    {
+        // only admin allowed
+        return false;
+    }
+
+    // helper to determine subordinate relation (sesuaikan relasi)
+    protected function isSubordinate(User $manager, User $possibleSubordinate)
+    {
+        // Asumsi: users table punya manager_id pointing to their manager's id
+        // atau ada relasi custom seperti department/position hierarchy
+        return $possibleSubordinate->manager_id === $manager->id;
+    }
+}
+AuthServiceProvider
+
+Copy
+php artisan make:provider AuthServiceProvider
+Laravel akan membuat file:
+
+
+Copy
+app/Providers/AuthServiceProvider.php
+✅ Isi AuthServiceProvider untuk register Policy
+Setelah file dibuat, isi seperti ini:
+
+
+Copy
+<?php
+
+namespace App\Providers;
+
+use Illuminate\Foundation\Support\Providers\AuthServiceProvider as ServiceProvider;
+use App\Models\Attendance;
+use App\Policies\AttendancePolicy;
+
+class AuthServiceProvider extends ServiceProvider
+{
+    protected $policies = [
+        Attendance::class => AttendancePolicy::class,
+    ];
+
+    public function boot()
+    {
+        $this->registerPolicies();
+    }
+}
+Jika kamu punya policy lain, tambahkan di array $policies.
+
+🔥 Langkah terakhir (penting)
+Tambahkan provider ini ke Laravel (kalau belum otomatis), buka:
+
+
+Copy
+bootstrap/app.php
+Cari bagian:
+
+
+Copy
+->withProviders([
+    // daftar providers
+])
+Tambahkan:
+
+
+Copy
+App\Providers\AuthServiceProvider::class,
+Contoh:
+
+
+Copy
+->withProviders([
+    App\Providers\AppServiceProvider::class,
+    App\Providers\AuthServiceProvider::class,
+])
+Setelah itu lakukan:
+
+Copy
+php artisan optimize:clear
+Pastikan User model benar (file: app/Models/User.php)
+Buka file itu dan pastikan persis seperti blok kode ini (sesuaikan use lainnya jika ada):
+
+
+Copy
+<?php
+
+namespace App\Models;
+
+use Illuminate\Foundation\Auth\User as Authenticatable;
+use Illuminate\Notifications\Notifiable;
+use Spatie\Permission\Traits\HasRoles; // <--- pastikan ini
+
+class User extends Authenticatable
+{
+    use Notifiable, HasRoles; // <--- HasRoles dipakai di sini
+
+    // ... atribut dan relasi lain ...
+}
+Poin penting:
+
+Jangan use App\Models\HasRoles; — harus Spatie\Permission\Traits\HasRoles.
+
+Pastikan tidak ada typo, dan file disimpan.
+
+Refresh autoload & cache
+Setelah mengubah User.php atau menginstall package, jalankan:
+
+
+Copy
+composer dump-autoload
+php artisan optimize:clear
+php artisan permission:cache-reset
+php artisan cache:clear
+4) Pastikan migration/konfigurasi Spatie sudah ada (opsional tapi umum)
+Jika belum pernah publish/migrate Spatie, lakukan:
+
+
+Copy
+php artisan vendor:publish --provider="Spatie\Permission\PermissionServiceProvider"
+php artisan migrate
+(Tapi ini hanya untuk membuat tabel roles/permissions — tidak berhubungan langsung dengan method yang undefined.)
+
+5) Cek di Tinker apakah method tersedia
+Jalankan tinker:
+
+
+Copy
+php artisan tinker
+Kemudian:
+
+
+Copy
+$u = \App\Models\User::where('email','median@posco.net')->first();
+method_exists($u, 'getRoleNames');                // harus true
+method_exists($u, 'getPermissionsViaRoles');      // harus true
+Jika kedua method_exists mengembalikan true, coba lagi:
+
+
+Copy
+$u->getRoleNames();
+$u->getPermissionsViaRoles()->pluck('name');
+Menyinkronkan position ke role otomatis (opsional)
+Install Spatie
+
+Copy
+composer require spatie/laravel-permission
+Jika kamu ingin agar ketika user dibuat/diupdate field position otomatis sinkron ke role Spatie, tambahkan di User model:
+
+
+Copy
+protected static function booted()
+{
+    static::created(function ($user) {
+        if (!empty($user->position) && \Spatie\Permission\Models\Role::where('name', $user->position)->exists()) {
+            $user->assignRole($user->position);
+        }
+    });
+
+    static::updated(function ($user) {
+        if ($user->isDirty('position')) {
+            $pos = $user->position;
+            if ($pos && \Spatie\Permission\Models\Role::where('name', $pos)->exists()) {
+                $user->syncRoles([$pos]);
+            } else {
+                $user->syncRoles([]); // atau hapus role lama
+            }
+        }
+    });
+}
+
+Copy
+php artisan tinker
+User::find(1)->assignRole('admin');
+Langkah 5 — Batasi Menu Filament
+Di setiap Resource:
+
+
+Copy
+public static function canViewAny(): bool
+{
+    return auth()->user()->hasRole('admin');
+}
+Langkah 6 — Implementasi Aturan Absensi
+Semua bisa melihat absensi milik sendiri
+
+Atasan bisa melihat bawahan sesuai hierarki
+
+Admin bisa lihat semuanya
+
+Langkah 7 — Uji Coba Sistem
+Login sebagai team_member → hanya lihat milik sendiri
+
+Login sebagai supervisor → lihat bawahan
+
+Login sebagai admin → semua resource muncul
+
+Login sebagai departement_manager → lihat semua user sesuai aturan
+
+🎉 Output Akhir Pertemuan
+Sistem berhasil dibangun dengan fitur:
+
+Login / logout bekerja
+
+User memiliki role
+
+Akses menu mengikuti role
+
+Absensi hanya dapat dilihat sesuai otorisasi
+
+Admin mengelola master data & seluruh panel
+
+ertemuan 7 — Autentikasi & Role Management
+Tujuan singkat
+Implementasi auth + role/permission sehingga role memiliki akses sesuai ketentuan:
+
+team_member → bisa absen & lihat riwayat sendiri
+
+group_leader → absen, riwayat sendiri, lihat riwayat team_member
+
+section_leader → absen, riwayat sendiri, lihat riwayat team_member & group_leader
+
+supervisor → ... tambah akses section_leader
+
+assistant_manager → ... tambah akses supervisor
+
+team_manager → ... tambah akses assistant_manager
+
+department_manager → ... tambah akses team_manager
+
+admin → semua akses + halaman admin Filament
+
+Kita implementasikan hirarki akses menggunakan Spatie permissions + sebuah helper/hierarchy check untuk memfilter riwayat absen yang dapat diakses.
+
+1) Install paket yang dibutuhkan
+Jalankan di proyek Laravel (di root repo):
+
+
+Copy
+# 1) Laravel Breeze (auth scaffolding)
+composer require laravel/breeze --dev
+php artisan breeze:install blade
+npm install && npm run dev
+php artisan migrate
+
+# 2) Filament (admin panel)
+composer require filament/filament
+
+# 3) Filament Shield (meng-setup Spatie + integrasi Filament)
+composer require usman/filament-shield
+# (nama paket bisa berbeda tergantung versi; jika paket resmi Filament Shield: spatie/laravel-permission + filament-shield
+composer require spatie/laravel-permission
+composer require filament/shield
+Catatan: Jika nama paket filament/shield berbeda di versi terbaru, gunakan dokumentasi resmi. Perintah di atas umum — sesuaikan jika composer menolak (paket name/version).
+
+Setelah install Spatie:
+
+
+Copy
+php artisan vendor:publish --provider="Spatie\Permission\PermissionServiceProvider"
+php artisan migrate
+Jika menggunakan Filament Shield (jika tersedia):
+
+
+Copy
+php artisan shield:install
+# atau php artisan filament:shield:install tergantung versi
+2) Setup Model User & Trait
+Di app/Models/User.php tambahkan trait HasRoles:
+
+
+Copy
+use Spatie\Permission\Traits\HasRoles;
+
+class User extends Authenticatable
+{
+    use HasApiTokens, HasFactory, Notifiable, HasRoles;
+    // ...
+}
+Pastikan config/auth.php dan config/permission.php publish/config sudah ada.
+
+3) Buat roles & permissions — naming convention
+Kita bikin permissions dasar untuk fitur absensi:
+
+attendance.create (bisa absen)
+
+attendance.view.self (lihat riwayat sendiri)
+
+attendance.view.team_member
+
+attendance.view.group_leader
+
+attendance.view.section_leader
+
+attendance.view.supervisor
+
+attendance.view.assistant_manager
+
+attendance.view.team_manager
+
+attendance.view.department_manager
+
+filament.* (akses admin panel / Filament) — Filament biasanya punya gate viewFilament.
+
+Tapi lebih praktis: buat role dan assign permission yang sesuai.
+
+4) Seeder: buat roles & permissions otomatis
+Buat seeder database/seeders/RolePermissionSeeder.php:
+
+
+Copy
+<?php
+
+namespace Database\Seeders;
+
+use Illuminate\Database\Seeder;
+use Spatie\Permission\Models\Role;
+use Spatie\Permission\Models\Permission;
+
+class RolePermissionSeeder extends Seeder
+{
+    public function run()
+    {
+        // permissions
+        $permissions = [
+            'attendance.create',
+            'attendance.view.self',
+            'attendance.view.team_member',
+            'attendance.view.group_leader',
+            'attendance.view.section_leader',
+            'attendance.view.supervisor',
+            'attendance.view.assistant_manager',
+            'attendance.view.team_manager',
+            'attendance.view.department_manager',
+            'filament.access', // akses admin panel
+        ];
+
+        foreach ($permissions as $perm) {
+            Permission::firstOrCreate(['name' => $perm]);
+        }
+
+        // create roles and assign permissions according to hierarchy
+        $roles = [
+            'team_member' => [
+                'attendance.create',
+                'attendance.view.self',
+            ],
+            'group_leader' => [
+                'attendance.create',
+                'attendance.view.self',
+                'attendance.view.team_member',
+            ],
+            'section_leader' => [
+                'attendance.create',
+                'attendance.view.self',
+                'attendance.view.team_member',
+                'attendance.view.group_leader',
+            ],
+            'supervisor' => [
+                'attendance.create',
+                'attendance.view.self',
+                'attendance.view.team_member',
+                'attendance.view.group_leader',
+                'attendance.view.section_leader',
+            ],
+            'assistant_manager' => [
+                'attendance.create',
+                'attendance.view.self',
+                'attendance.view.team_member',
+                'attendance.view.group_leader',
+                'attendance.view.section_leader',
+                'attendance.view.supervisor',
+            ],
+            'team_manager' => [
+                'attendance.create',
+                'attendance.view.self',
+                'attendance.view.team_member',
+                'attendance.view.group_leader',
+                'attendance.view.section_leader',
+                'attendance.view.supervisor',
+                'attendance.view.assistant_manager',
+            ],
+            'department_manager' => [
+                'attendance.create',
+                'attendance.view.self',
+                'attendance.view.team_member',
+                'attendance.view.group_leader',
+                'attendance.view.section_leader',
+                'attendance.view.supervisor',
+                'attendance.view.assistant_manager',
+                'attendance.view.team_manager',
+            ],
+            'admin' => [
+                'filament.access',
+                // beri semua permissions (alternatif: syncAllPermissions())
+            ],
+        ];
+
+        foreach ($roles as $roleName => $perms) {
+            $role = Role::firstOrCreate(['name' => $roleName]);
+            if ($roleName === 'admin') {
+                $role->syncPermissions(Permission::all());
+            } else {
+                $role->syncPermissions($perms);
+            }
+        }
+    }
+}
+Jalankan:
+
+
+Copy
+php artisan db:seed --class=RolePermissionSeeder
+5) Assignment role pada user — contoh seeder / admin UI
+Untuk membuat akun admin cepat:
+
+
+Copy
+// tinker or seeder
+$user = \App\Models\User::find(1);
+$user->assignRole('admin');
+Atau saat registrasi (breeze) set default role team_member:
+
+Di RegisteredUserController@store setelah create user:
+
+
+Copy
+$user->assignRole('team_member');
+6) Policy / Gate untuk membatasi akses riwayat absen
+Kita buat AttendancePolicy (asumsi model Attendance):
+
+
+Copy
+php artisan make:policy AttendancePolicy --model=Attendance
+Di app/Policies/AttendancePolicy.php:
+
+
+Copy
+public function view(User $user, Attendance $attendance)
+{
+    // owner always can view
+    if ($attendance->user_id === $user->id) {
+        return $user->can('attendance.view.self');
+    }
+
+    // role-based visibility: kita mengecek apakah $user punya permission
+    // untuk melihat level dari $attendance->user->role
+    // asumsikan setiap user hanya punya 1 role (atau gunakan primary role)
+    $targetRole = $attendance->user->getRoleNames()->first(); // e.g. 'team_member'
+
+    // build permission name
+    $permission = 'attendance.view.' . $targetRole;
+
+    return $user->can($permission);
+}
+Catatan: getRoleNames()->first() mengambil role pertama; jika user punya banyak role, ubah sesuai rules perusahaan.
+
+Register policy di AuthServiceProvider.
+
+7) Helper: menentukan hirarki dan query pemfilteran riwayat
+Daripada memeriksa satu-per-satu, kita buat helper yang mengembalikan array roles yang bisa diakses oleh role tertentu.
+
+Buat app/Services/RoleHierarchy.php:
+
+
+Copy
+<?php
+namespace App\Services;
+
+class RoleHierarchy
+{
+    public static function accessibleRoles(string $roleName): array
+    {
+        $order = [
+            'team_member',
+            'group_leader',
+            'section_leader',
+            'supervisor',
+            'assistant_manager',
+            'team_manager',
+            'department_manager',
+            'admin',
+        ];
+
+        $idx = array_search($roleName, $order);
+        if ($idx === false) {
+            return [$roleName]; // fallback
+        }
+
+        // roles below or equal to this role (i.e. this role can see itself and lower in hierarchy)
+        return array_slice($order, 0, $idx + 1);
+    }
+}
+Contoh penggunaan di controller (riwayat yang bisa dilihat user):
+
+
+Copy
+use App\Services\RoleHierarchy;
+use Spatie\Permission\Models\Role;
+
+public function index(Request $request)
+{
+    $user = $request->user();
+    $userRole = $user->getRoleNames()->first();
+
+    $accessibleRoles = RoleHierarchy::accessibleRoles($userRole);
+
+    // ambil user ids yang memiliki role di $accessibleRoles
+    $userIds = \App\Models\User::role($accessibleRoles)->pluck('id')->toArray();
+
+    // jika hanya melihat riwayat sendiri: $userIds akan berisi sendiri dan mungkin tim
+    $attendances = \App\Models\Attendance::whereIn('user_id', $userIds)
+        ->orderBy('created_at', 'desc')
+        ->paginate(20);
+
+    return view('attendances.index', compact('attendances'));
+}
+Penjelasan: fungsi role($roles) berasal dari Spatie trait (query scope).
+
+8) Route & middleware
+Tambahkan middleware untuk route:
+
+routes/web.php:
+
+
+Copy
+Route::middleware(['auth'])->group(function () {
+    Route::get('/attendances', [AttendanceController::class, 'index'])->name('attendances.index');
+    Route::post('/attendances', [AttendanceController::class, 'store'])
+        ->name('attendances.store')->middleware('permission:attendance.create');
+});
+Untuk Filament admin, biasanya harus set gate viewFilament agar hanya admin dapat akses:
+
+Di App\Providers\FilamentServiceProvider (atau AuthServiceProvider):
+
+
+Copy
+use Filament\Facades\Filament;
+
+Filament::serving(function () {
+    Filament::registerNavigationItems([
+        //
+    ]);
+});
+
+Gate::define('viewFilament', function ($user) {
+    return $user->hasRole('admin') || $user->can('filament.access');
+});
+9) Filament Resources (opsional): User & Attendance
+Buat Filament Resource untuk Attendance (hanya admin dan role berizin):
+
+
+Copy
+php artisan make:filament-resource Attendance
+Di resource query, gunakan scope untuk memfilter jika bukan admin:
+
+
+Copy
+protected static function getEloquentQuery(): Builder
+{
+    $query = parent::getEloquentQuery();
+    $user = auth()->user();
+    if (!$user->hasRole('admin')) {
+        $role = $user->getRoleNames()->first();
+        $accessibleRoles = \App\Services\RoleHierarchy::accessibleRoles($role);
+        $userIds = \App\Models\User::role($accessibleRoles)->pluck('id')->toArray();
+
+        return $query->whereIn('user_id', $userIds);
+    }
+    return $query;
+}
+Untuk akses ke resource, di getPages() / pages kamu bisa menambahkan policy or can('attendance.view.*') checks.
+
+10) Frontend: tampilkan tombol absen & riwayat
+Contoh blade (simple):
+
+resources/views/attendances/index.blade.php:
+
+
+Copy
+@extends('layouts.app')
+
+@section('content')
+<div class="container">
+    <h1>Riwayat Absensi</h1>
+
+    @can('attendance.create')
+    <form action="{{ route('attendances.store') }}" method="POST">
+        @csrf
+        <button type="submit" class="btn btn-primary">Absen Sekarang</button>
+    </form>
+    @endcan
+
+    <table class="table mt-4">
+        <thead>
+            <tr>
+                <th>User</th>
+                <th>Tanggal</th>
+                <th>Tipe</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach($attendances as $a)
+            <tr>
+                <td>{{ $a->user->name }}</td>
+                <td>{{ $a->created_at }}</td>
+                <td>{{ $a->type ?? 'in' }}</td>
+            </tr>
+            @endforeach
+        </tbody>
+    </table>
+
+    {{ $attendances->links() }}
+</div>
+@endsection
+11) AttendanceController store (contoh sederhana)
+
+Copy
+public function store(Request $request)
+{
+    $this->authorize('create', Attendance::class); // optional, atau middleware permission
+
+    $attendance = Attendance::create([
+        'user_id' => $request->user()->id,
+        'type' => 'in',
+        // other fields...
+    ]);
+
+    return redirect()->route('attendances.index')->with('success', 'Absen berhasil.');
+}
+Jika menggunakan middleware 'permission:attendance.create' maka authorize line optional.
+
+12) Testing & verifikasi
+Jalankan seeder RolePermissionSeeder.
+
+Buat beberapa user dan assign roles berbeda (tinker / seeder).
+
+Login sebagai team_member — coba absen, lihat riwayat: harusnya hanya riwayat sendiri.
+
+Login sebagai group_leader — lihat riwayat: harusnya termasuk team_member (gunakan data test yang memetakan anggota ke role).
+
+Login sebagai admin — cek Filament admin panel bisa diakses.
+
+Tips debug: gunakan dd($accessibleRoles, $userIds) di controller untuk memastikan logika hierarki.
+
+13) Catatan penting & asumsi
+Saya mengasumsikan model Attendance sudah ada dan ber-relasi ke User (field user_id). Jika belum, buat migration:
+
+
+Copy
+php artisan make:migration create_attendances_table
+Contoh schema:
+
+
+Copy
+$table->id();
+$table->foreignId('user_id')->constrained()->cascadeOnDelete();
+$table->string('type')->nullable(); // in/out
+$table->timestamps();
+Saya mengasumsikan tiap user hanya memakai 1 role utama. Jika user punya multi-role, perlu definisikan primary role atau aturan resolusi.
+
+Filament Shield/Shield package name/version bisa berbeda; cek composer require output jika ada perintah alternatif.
+
+Jika ingin granular team membership (mis. group/team relationships), untuk filter riwayat lebih akurat perlu tambahkan relasi users.team_id atau users.manager_id. Saat ini akses diatur hanya berdasarkan role-hierarchy, bukan struktur organisasi/relasi tim.
+
+14) Lampiran: snippet cepat untuk menambahkan primary role pada users table (opsional)
+Jika ingin menyimpan primary_role pada users:
+
+Migration:
+
+
+Copy
+Schema::table('users', function (Blueprint $table) {
+    $table->string('primary_role')->nullable()->after('email');
+});
+Set primary_role ketika assign role, dan gunakan itu dalam RoleHierarchy::accessibleRoles($user->primary_role) untuk konsistensi.
+
+Halaman Login
+
+Copy
+/admin
+Namun setelah login, arah redirect-nya berbeda tergantung role.
+Admin diarahkan ke Halaman Admin (Filament Panel)
+User lain diarahkan ke Halaman Absensi (absen.index)
+
+✅ Cara membuat redirect berbeda setelah login
+Edit file berikut:
+
+app/Http/Controllers/Auth/AuthenticatedSessionController.php
+
+Pada method store() ubah bagian setelah $request->session()->regenerate() seperti ini:
+
+
+Copy
+public function store(LoginRequest $request): RedirectResponse
+{
+    $request->authenticate();
+
+    $request->session()->regenerate();
+
+    $user = $request->user();
+
+    // ==== REDIRECT BY ROLE ====
+    if ($user->hasRole('admin')) {
+        return redirect()->intended('/admin');  // Filament admin panel
+    }
+
+    // selain admin masuk ke halaman absensi
+    return redirect()->intended(route('attendances.index'));
+}
+Jika Filament admin URL kamu adalah /admin, sudah benar.
+Jika berbeda (misalnya /dashboard), sesuaikan redirect-nya.
+
+🔥 Alur yang terjadi
+1️⃣ User membuka /login
+Semua role memakai halaman yang sama.
+
+2️⃣ User login → cek role
+Admin → masuk ke Admin Panel (Filament)
+
+Team_member, group_leader, dll → langsung masuk ke halaman absen
+
+3️⃣ Role-based feature
+User tetap punya satu halaman login, tapi dashboard tujuannya beda.
+
+2️⃣ Role & Permission Menggunakan Filament Shield
+1. Buat Resource User
+Make User Resource
+Sebelum melanjutkan membuat Role & Permission menggunakan Filament Shield, Buat User Resource dengan menjalankan perintah berikut 
+
+
+Copy
+php artisan make:filament-resource User --generate
+perintah di atas digunakan untuk menampilkan menu Management User pada Admin Panel
+
+Ubah Position Id -> Position Name
+Buka UserResource > Ganti Bagian Form
+
+
+Copy
+Forms\Components\Select::make('position_id')
+menjadi:
+
+
+Copy
+Forms\Components\Select::make('position_id')
+    ->relationship('position', 'position_name') // ambil nama dari tabel positions
+    ->label('Position')
+    ->searchable()
+    ->required(),
+Ganti Bagian Table
+
+
+Copy
+Tables\Columns\TextColumn::make('position_id')
+menjadi:
+
+
+Copy
+Tables\Columns\TextColumn::make('position.position_name')
+    ->label('Position')
+    ->sortable()
+    ->searchable(),
+Buka User Model
+Tambahkan kolom position_id
+
+
+Copy
+protected $fillable = [
+        'name',
+        'email',
+        'password',
+        'position_id', //Tambahkan position_id 
+    ];
+Tambahkan juga fungsi untuk relasi ke tabel position
+
+
+Copy
+public function position()
+    {
+        return $this->belongsTo(\App\Models\Position::class);
+    }
+Buka Position Model
+Tambahkan juga fungsi untuk relasi ke tabel position
+
+
+Copy
+public function users()
+    {
+        return $this->hasMany(User::class);
+    }
+2. Install Filament Shield
+Jalankan perintah berikut untuk menginstall Filament Shield
+
+
+Copy
+composer require bezhansalleh/filament-shield:"^3.9.10"
+
+Copy
+php artisan vendor:publish --tag="filament-shield-config"
+
+Buka file Model User pada direktori : app\Models\User.php > tambahkan HasRoles
+
+
+Kemudian jalankan perintah berikut
+
+
+Copy
+php artisan shield:setup
+
+Buka AdminPanelProvider pada direktori : app\Providers\Filament\AdminPanelProvider.php
+
+
+Copy
+// Tambahkan baris kode berikut
+
+->plugins([
+      \BezhanSalleh\FilamentShield\FilamentShieldPlugin::make(),
+  ]);
+Jalankan perintah berikut pada Terminal
+
+
+Copy
+php artisan optimize:clear
+
+Jalankan perintah berikut pada Terminal > setelah itu ketik 0 > Enter
+
+
+Copy
+php artisan shield:generate --all
+
+Filament Shield mengenali super_admin yang memiliki kontrol penuh terhadap semua akses, berikut adalah perintah untuk menetapkan user yang ada sebagai super_admin
+
+
+Copy
+php artisan shield:super-admin
+
+jika user lebih dari 1, kita diberikan pilihan untuk memilih 1 user untuk dijadikan super_admin - jika hanya baru memiliki 1 user otomatis akan langsung dijadikan super_admin ketika menjalankan perintah di atas.
+
+Langkah terakhir masuk sebagai user yang memiliki role super_admin
+
+
+3️⃣
+Buat Roles
+Buat Seeder Untuk membuat User untuk semua Karyawan
+
+Buat Seeder untuk membuat Roles baru 
+
+
+Copy
+php artisan make:seeder RoleSeeder
+Buka File RoleSeeder
+
+
+Copy
+<?php
+
+namespace Database\Seeders;
+
+use Illuminate\Database\Console\Seeds\WithoutModelEvents;
+use Illuminate\Database\Seeder;
+use Spatie\Permission\Models\Role;
+
+class RoleSeeder extends Seeder
+{
+    public function run(): void
+    {
+        $roles = [
+            'super_admin',
+            'team_member',
+            'group_leader',
+            'section_leader',
+            'supervisor',
+            'assistant_manager',
+            'team_manager',
+            'departement_manager',
+        ];
+
+        foreach($roles as $role){
+            Role::firstOrCreate(
+                ['name' => $role, 'guard_name' => 'web']
+            );
+        }
+    }
+}
+Jalankan RoleSeeder
+
+
+Copy
+php artisan db:seed --class=RoleSeeder
+Tambahkan kolom karyawan_id
+Tambahkan kolom karyawan_id pada tabel Users
+
+
+Copy
+php artisan make:migration add_karyawan_id_to_users_table --table=users
+Buka file migration add_karyawan_id_to_users_table
+
+
+Copy
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    public function up(): void
+    {
+        Schema::table('users', function (Blueprint $table) {
+            // kalau pakai tabel 'karyawans'
+            $table->foreignId('karyawan_id')
+                ->nullable()
+                ->constrained('karyawans')
+                ->nullOnDelete();
+        });
+    }
+
+    public function down(): void
+    {
+        Schema::table('users', function (Blueprint $table) {
+            $table->dropForeign(['karyawan_id']);
+            $table->dropColumn('karyawan_id');
+        });
+    }
+};
+Buka file User Model > tambahkah karyawan_id pada fillable
+
+
+Copy
+protected $fillable = [
+        'name',
+        'email',
+        'password',
+        'position_id',
+        'karyawan_id', //tambahkan baris ini
+    ];
+Jalankan Migrate
+
+
+Copy
+php artisan migrate
+Buat user untuk semua Karyawan
+Jalankan perintah berikut untuk membuat daftar User yang diambil dari data Karyawan
+
+
+Copy
+php artisan make:seeder KaryawanToUserSeeder
+Buka file KaryawanToUser Seeder
+
+
+Copy
+<?php
+
+namespace Database\Seeders;
+
+use App\Models\Karyawan;
+use App\Models\User;
+use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\Hash;
+
+class KaryawanToUserSeeder extends Seeder
+{
+    public function run(): void
+    {
+        // mapping position_id (angka) ke nama role
+        $positionIdToRole = [
+            1 => 'super_admin',            
+            2 => 'team_member',
+            3 => 'group_leader',
+            4 => 'section_leader',
+            5 => 'supervisor',
+            6 => 'assistant_manager',
+            7 => 'team_manager',
+            8 => 'departement_manager',
+        ];
+
+        Karyawan::chunk(100, function ($karyawans) use ($positionIdToRole) {
+            foreach ($karyawans as $karyawan) {
+
+                $roleName = $positionIdToRole[$karyawan->position_id] ?? null;
+
+                $user = User::firstOrCreate(
+                    ['email' => $karyawan->email],
+                    [
+                        'name'        => $karyawan->nama_karyawan,
+                        'karyawan_id' => $karyawan->id,
+                        'position_id' => $karyawan->position_id,
+                        'password'    => Hash::make('poscodx'),
+                    ],
+                );
+
+                if ($roleName) {
+                    $user->syncRoles([$roleName]);
+                }
+            }
+        });
+    }
+}
+Jalankan KaryawanToUserSeeder
+
+
+Copy
+php artisan db:seed --class=KaryawanToUserSeeder
+Cek Roles
+untuk menguji role yang dimiliki oleh user apakah sudah diassign, jalankan perintah berikut pada Terminal : 
+
+Buka Terminal dan Jalankan Tinker:
+
+Di root project Laravel Anda, jalankan:
+
+
+Copy
+php artisan tinker
+Ini akan membuka shell interaktif.
+
+Cari User yang Ingin Diperiksa:
+
+Misalnya, untuk user dengan ID 1:
+
+
+Copy
+$user = App\Models\User::find(5);
+Ganti 1 dengan ID user yang sesuai. Jika user tidak ditemukan, $user akan null.
+
+Periksa Role yang Dimiliki User:
+
+Untuk melihat semua role:
+
+
+Copy
+$user->roles;
+Ini akan menampilkan collection dari model Role yang dimiliki user.
+
+Untuk mendapatkan nama role saja (dalam bentuk array):
+
+
+Copy
+$user->getRoleNames();
+Output contoh: ["admin", "editor"]
+
+Periksa Permission yang Dimiliki User:
+
+Untuk melihat semua permission:
+
+
+Copy
+$user->permissions;
+Ini akan menampilkan collection dari model Permission.
+
+Untuk nama permission saja:
+
+
+Copy
+$user->getPermissionNames();
+Output contoh: ["view admin panel", "edit posts"]
+
+Cek Role atau Permission Spesifik:
+
+Untuk memeriksa apakah user memiliki role tertentu (misalnya, 'admin'):
+
+
+Copy
+$user->hasRole('admin');
+Output: true atau false.
+
+Untuk permission:
+
+
+Copy
+$user->hasPermissionTo('view admin panel');
+Output: true atau false.
+
+Keluar dari Tinker:
+
+Ketik exit atau tekan Ctrl+D.
+
+4️⃣
+Buat Seeder Absensi
+
+Copy
+php artisan make:seeder AbsensiSeeder    
+Buka file AbsensiSeeder, paste kode berikut : 
+
+
+Copy
+<?php
+
+namespace Database\Seeders;
+
+use Illuminate\Database\Seeder;
+use App\Models\Karyawan;
+use App\Models\Absensi;
+use Carbon\Carbon;
+
+class AbsensiSeeder extends Seeder
+{
+    public function run(): void
+    {
+        // ambil semua karyawan yang sudah di-seed
+        $karyawans = Karyawan::all();
+
+        if ($karyawans->isEmpty()) {
+            $this->command->warn('Tidak ada data karyawan. Jalankan KaryawanSeeder dulu.');
+            return;
+        }
+
+        // contoh: generate absensi untuk 5 hari terakhir (hari kerja)
+        $jumlahHari = 5;
+        $today      = Carbon::today();
+
+        for ($i = $jumlahHari; $i >= 1; $i--) {
+            $tanggal = $today->copy()->subDays($i);
+
+            foreach ($karyawans as $karyawan) {
+
+                // jam masuk standar 08:00, jam pulang standar 17:00
+                $waktuMasuk  = $tanggal->copy()->setTime(8, 0, 0);
+                $waktuPulang = $tanggal->copy()->setTime(17, 0, 0);
+
+                // random overtime (true/false)
+                $isOvertime = (bool) random_int(0, 1);
+
+                $alasanOvertime = null;
+
+                if ($isOvertime) {
+                    // kalau lembur, pulang lebih lambat 2 jam
+                    $waktuPulang = $waktuPulang->copy()->addHours(2);
+                    $alasanOvertime = 'Pekerjaan belum selesai';
+                }
+
+                Absensi::create([
+                    'karyawan_id'     => $karyawan->id,
+                    'tanggal'         => $tanggal->toDateString(),
+                    'waktu_masuk'     => $waktuMasuk->toDateTimeString(),
+                    'waktu_pulang'    => $waktuPulang->toDateTimeString(),
+                    'is_overtime'     => $isOvertime,
+                    'alasan_overtime' => $alasanOvertime,
+                    'foto_masuk'      => null, // bisa diganti dummy path kalau mau
+                    'foto_pulang'     => null, // bisa diganti dummy path kalau mau
+                ]);
+            }
+        }
+    }
+}
+Jalankan Absensi Seeder
+
+
+Copy
+php artisan db:seed --class=AbsensiSeeder
+Untuk menampilkan Position Name pada table absensi, buka Absensi Resource
+
+
+Copy
+Tables\Columns\TextColumn::make('karyawan.position.position_name')
+                    ->label('Position')
+                    ->sortable()
+                    ->searchable(),
+
+                    5️⃣
+Filter Role Absensi
+Buka Absensi Resource, tambahkan kode berikut.
+
+
+Copy
+ protected static array $positionRankById = [
+        2 => 1, // team_member
+        3 => 2, // group_leader
+        4 => 3, // section_leader
+        5 => 4, // supervisor
+        6 => 5, // assistant_manager
+        7 => 6, // team_manager
+        8 => 7, // departement_manager
+    ];
+
+Copy
+    /**
+     * Batasi data absensi yang bisa dilihat user sesuai jabatan & team.
+     */
+    public static function getEloquentQuery(): Builder
+    {
+        $query = parent::getEloquentQuery();
+        $user  = Auth::user();
+
+        if (! $user) {
+            return $query->whereRaw('1 = 0');
+        }
+
+        // SUPER ADMIN (role Spatie) → boleh lihat semua absensi
+        if (method_exists($user, 'hasRole') && $user->hasRole('super_admin')) {
+            return $query;
+        }
+
+        // Ambil karyawan yang terkait dengan user
+        $karyawan = $user->karyawan ?? null;
+        if (! $karyawan) {
+            // User tidak punya karyawan terkait → jangan tampilkan apa-apa
+            return $query->whereRaw('1 = 0');
+        }
+
+        $positionId = $karyawan->position_id;
+
+        // Kalau position_id tidak dikenal di hirarki → hanya lihat absensi sendiri
+        if (! array_key_exists($positionId, self::$positionRankById)) {
+            return $query->where('karyawan_id', $karyawan->id);
+        }
+
+        $currentRank = self::$positionRankById[$positionId];
+
+        // TEAM MEMBER (rank paling rendah) → hanya boleh lihat absensi sendiri
+        if ($currentRank === 1) {
+            return $query->where('karyawan_id', $karyawan->id);
+        }
+
+        // Untuk atasan:
+        // - boleh lihat dirinya sendiri
+        // - boleh lihat bawahan DI TEAM YANG SAMA
+        //   dengan position_id yang rank-nya <= rank dia (lebih rendah atau sama)
+
+        $allowedPositionIds = collect(self::$positionRankById)
+            ->filter(fn ($rank) => $rank <= $currentRank)
+            ->keys(); // ini berisi daftar position_id yang boleh dia lihat
+
+        return $query->where(function (Builder $outer) use ($karyawan, $allowedPositionIds) {
+            $outer
+                // selalu boleh lihat absensi sendiri
+                ->where('karyawan_id', $karyawan->id)
+                // + bawahan di team yang sama
+                ->orWhereHas('karyawan', function (Builder $q) use ($karyawan, $allowedPositionIds) {
+                    $q->where('team_id', $karyawan->team_id)
+                      ->whereIn('position_id', $allowedPositionIds);
+                });
+        });
+    }
+
+    ✅ Absensi Custom
+🎯Super Admin bisa absen semua karyawan 
+Buka Absensi Resource, ganti bagian Select Karyawan
+
+
+Copy
+Forms\Components\Select::make('karyawan_id')
+    ->label('Karyawan')
+    ->relationship('karyawan', 'nama_karyawan')
+    ->searchable()
+    ->preload()
+    ->required()
+    ->visible(fn () =>
+        Auth::user()?->hasRole('super_admin')
+    )
+    ->disabled(fn () =>
+        ! Auth::user()?->hasRole('super_admin')
+    )
+    ->default(fn () =>
+        Auth::user()?->karyawan?->id
+    ),
+🔐 Tambahkan Hidden field fallback (WAJIB)
+Karena kalau field Select disembunyikan, nilainya tidak ikut submit, maka kita tambahkan:
+
+
+Copy
+Forms\Components\Hidden::make('karyawan_id')
+    ->default(fn () =>
+        Auth::user()?->karyawan?->id
+    )
+    ->required()
+    ->visible(fn () =>
+        ! Auth::user()?->hasRole('super_admin')
+    ),
+📌 Ini penting supaya data tetap tersimpan untuk user biasa.
+
+✅ HASIL AKHIR (sesuai requirement)
+🔹 super_admin
+Dropdown muncul
+
+Bisa pilih semua karyawan
+
+🔹 team_member / group_leader / dst
+Tidak ada dropdown
+
+Otomatis tersimpan sebagai dirinya sendiri
+
+Tidak bisa curang pilih orang lain
+
+🎯Create Absensi
+
+Copy
+<?php
+
+namespace App\Filament\Resources\AbsensiResource\Pages;
+
+use Carbon\Carbon;
+use Filament\Resources\Pages\CreateRecord;
+use App\Filament\Resources\AbsensiResource;
+use Illuminate\Support\Facades\Auth;
+use Filament\Notifications\NotificationException;
+use App\Models\Absensi;
+use App\Helpers\ImageCompressor;
+
+
+class CreateAbsensi extends CreateRecord
+{
+    protected static string $resource = AbsensiResource::class;
+
+    protected function mutateFormDataBeforeCreate(array $data): array
+    {
+        $user = Auth::user();
+
+        // ================================
+        // 1️⃣ Paksa karyawan_id (anti inject)
+        // ================================
+        if (! $user->hasRole('super_admin')) {
+            $data['karyawan_id'] = $user->karyawan->id;
+        }
+
+        // ================================
+        // 2️⃣ Cek absensi di tanggal yang sama
+        // ================================
+        $exists = Absensi::where('karyawan_id', $data['karyawan_id'])
+            ->where('tanggal', $data['tanggal'])
+            ->exists();
+
+        $data['is_overtime'] = $exists;
+
+        // ================================
+        // 3️⃣ Validasi alasan lembur
+        // ================================
+        if ($data['is_overtime'] && empty($data['alasan_overtime'])) {
+            throw new NotificationException('Alasan lembur wajib diisi!');
+        }
+
+        // ================================
+        // 4️⃣ Gabungkan tanggal + jam → TIMESTAMP
+        // ================================
+        $tanggal = Carbon::parse($data['tanggal']);
+
+        $data['waktu_masuk'] = ! empty($data['waktu_masuk'])
+            ? $tanggal->copy()->setTimeFromTimeString($data['waktu_masuk'])
+            : null;
+
+        $data['waktu_pulang'] = ! empty($data['waktu_pulang'])
+            ? $tanggal->copy()->setTimeFromTimeString($data['waktu_pulang'])
+            : null;
+
+
+
+        if (! empty($data['foto_masuk'])) {
+            ImageCompressor::compress($data['foto_masuk'], 100);
+        }
+
+        if (! empty($data['foto_pulang'])) {
+            ImageCompressor::compress($data['foto_pulang'], 100);
+        }
+        return $data;
+    }
+
+    // ================================
+    // 5️⃣ Kompres foto (max 100 KB)
+    // ================================
+
+
+}
+🎯Edit Absensi
+
+Copy
+<?php
+
+namespace App\Filament\Resources\AbsensiResource\Pages;
+
+use Carbon\Carbon;
+use Filament\Actions;
+use Filament\Resources\Pages\EditRecord;
+use App\Filament\Resources\AbsensiResource;
+use Illuminate\Support\Facades\Auth;
+use Filament\Notifications\NotificationException;
+use App\Models\Absensi;
+
+use App\Helpers\ImageCompressor;
+
+
+class EditAbsensi extends EditRecord
+{
+    protected static string $resource = AbsensiResource::class;
+
+    protected function getHeaderActions(): array
+    {
+        return [
+            Actions\DeleteAction::make(),
+        ];
+    }
+
+    /**
+     * ===============================
+     * 1️⃣ Saat form dibuka
+     * timestamp → TimePicker
+     * ===============================
+     */
+    protected function mutateFormDataBeforeFill(array $data): array
+    {
+        if (! empty($data['waktu_masuk'])) {
+            $data['waktu_masuk'] = Carbon::parse($data['waktu_masuk'])->format('H:i');
+        }
+
+        if (! empty($data['waktu_pulang'])) {
+            $data['waktu_pulang'] = Carbon::parse($data['waktu_pulang'])->format('H:i');
+        }
+
+        return $data;
+    }
+
+    /**
+     * ===============================
+     * 2️⃣ Saat simpan data
+     * TimePicker → timestamp
+     * ===============================
+     */
+    protected function mutateFormDataBeforeSave(array $data): array
+    {
+        $user = Auth::user();
+
+        // 🔐 Paksa karyawan_id (anti inject)
+        if (! $user->hasRole('super_admin')) {
+            $data['karyawan_id'] = $this->record->karyawan_id;
+        }
+
+        // ===============================
+        // Cek apakah ini lembur
+        // ===============================
+        $exists = Absensi::where('karyawan_id', $data['karyawan_id'])
+            ->where('tanggal', $data['tanggal'])
+            ->where('id', '!=', $this->record->id)
+            ->exists();
+
+        $data['is_overtime'] = $exists;
+
+        if ($data['is_overtime'] && empty($data['alasan_overtime'])) {
+            throw new NotificationException('Alasan lembur wajib diisi!');
+        }
+
+        // ===============================
+        // Gabungkan tanggal + jam
+        // ===============================
+        $tanggal = Carbon::parse($data['tanggal']);
+
+        $data['waktu_masuk'] = ! empty($data['waktu_masuk'])
+            ? $tanggal->copy()->setTimeFromTimeString($data['waktu_masuk'])
+            : null;
+
+        $data['waktu_pulang'] = ! empty($data['waktu_pulang'])
+            ? $tanggal->copy()->setTimeFromTimeString($data['waktu_pulang'])
+            : null;
+
+        // ===============================
+        // Validasi jam
+        // ===============================
+        if (
+            $data['waktu_masuk'] &&
+            $data['waktu_pulang'] &&
+            Carbon::parse($data['waktu_pulang'])->lessThanOrEqualTo(
+                Carbon::parse($data['waktu_masuk'])
+            )
+        ) {
+            throw new NotificationException('Waktu pulang harus lebih besar dari waktu masuk.');
+        }
+
+        if (! empty($data['foto_masuk']) && $data['foto_masuk'] !== $this->record->foto_masuk) {
+    ImageCompressor::compress($data['foto_masuk'], 100);
+}
+
+if (! empty($data['foto_pulang']) && $data['foto_pulang'] !== $this->record->foto_pulang) {
+    ImageCompressor::compress($data['foto_pulang'], 100);
+}
+
+
+        return $data;
+    }
+}
+🎯Absensi Resource
+
+Copy
+<?php
+
+namespace App\Filament\Resources;
+
+use Filament\Forms;
+use Filament\Tables;
+use App\Models\Absensi;
+use Filament\Forms\Form;
+use Filament\Tables\Table;
+use Filament\Resources\Resource;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Database\Eloquent\Builder;
+use App\Filament\Resources\AbsensiResource\Pages;
+use Illuminate\Database\Eloquent\SoftDeletingScope;
+use App\Filament\Resources\AbsensiResource\RelationManagers;
+
+class AbsensiResource extends Resource
+{
+    protected static ?string $model = Absensi::class;
+
+    protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
+
+    protected static array $positionRankById = [
+        2 => 1, // team_member
+        3 => 2, // group_leader
+        4 => 3, // section_leader
+        5 => 4, // supervisor
+        6 => 5, // assistant_manager
+        7 => 6, // team_manager
+        8 => 7, // departement_manager
+    ];
+
+    public static function form(Form $form): Form
+    {
+        return $form->schema([
+            Forms\Components\Select::make('karyawan_id')
+                ->label('Karyawan')
+                ->relationship('karyawan', 'nama_karyawan')
+                ->searchable()
+                ->preload()
+                ->required()
+                ->visible(
+                    fn() =>
+                    Auth::user()?->hasRole('super_admin')
+                )
+                ->disabled(
+                    fn() =>
+                    ! Auth::user()?->hasRole('super_admin')
+                )
+                ->default(
+                    fn() =>
+                    Auth::user()?->karyawan?->id
+                ),
+            Forms\Components\Hidden::make('karyawan_id')
+                ->default(
+                    fn() =>
+                    Auth::user()?->karyawan?->id
+                )
+                ->required()
+                ->visible(
+                    fn() =>
+                    ! Auth::user()?->hasRole('super_admin')
+                ),
+
+
+            Forms\Components\DatePicker::make('tanggal')
+                ->label('Tanggal')
+                ->default(now())
+                ->required(),
+
+            Forms\Components\TimePicker::make('waktu_masuk')
+                ->label('Waktu Masuk')
+                ->required(),
+
+            Forms\Components\TimePicker::make('waktu_pulang')
+                ->label('Waktu Pulang')
+                ->required(),
+
+            Forms\Components\FileUpload::make('foto_masuk')
+                ->label('Foto Masuk')
+                ->disk('public')
+                ->directory('absensi/foto_masuk')
+                ->image()
+                ->imagePreviewHeight('150')
+                ->maxSize(6120) // 5MB upload awal
+                ->acceptedFileTypes(['image/jpeg', 'image/png']),
+
+            Forms\Components\FileUpload::make('foto_pulang')
+                ->label('Foto Pulang')
+                ->disk('public')
+                ->directory('absensi/foto_pulang')
+                ->image()
+                ->imagePreviewHeight('150')
+                ->maxSize(6120)
+                ->acceptedFileTypes(['image/jpeg', 'image/png']),
+
+            Forms\Components\Toggle::make('is_overtime')
+                ->label('Apakah Overtime?')
+                ->reactive(),
+
+            Forms\Components\Textarea::make('alasan_overtime')
+                ->label('Alasan Overtime')
+                ->visible(fn($get) => $get('is_overtime'))
+                ->required(fn($get) => $get('is_overtime')),
+        ])->columns(2);
+    }
+
+    public static function table(Table $table): Table
+    {
+        return $table->columns([
+            Tables\Columns\TextColumn::make('karyawan.nama_karyawan')->label('Karyawan')->sortable()->searchable(),
+            Tables\Columns\TextColumn::make('karyawan.position.position_name')
+                ->label('Position')
+                ->sortable()
+                ->searchable(),
+            Tables\Columns\TextColumn::make('tanggal')->label('Tanggal')->date()->sortable(),
+            Tables\Columns\TextColumn::make('waktu_masuk')->label('Masuk')->time(),
+             // =====================
+            // FOTO MASUK
+            // =====================
+            Tables\Columns\ImageColumn::make('foto_masuk')
+                ->label('Foto Masuk')
+                ->disk('public')
+                ->height(50)
+                ->width(50)
+                ->circular()
+                ->toggleable(),
+
+           
+            Tables\Columns\TextColumn::make('waktu_pulang')->label('Pulang')->time(),
+             // =====================
+            // FOTO PULANG
+            // =====================
+            Tables\Columns\ImageColumn::make('foto_pulang')
+                ->label('Foto Pulang')
+                ->disk('public')
+                ->height(50)
+                ->width(50)
+                ->circular()
+                ->toggleable(),
+
+            Tables\Columns\IconColumn::make('is_overtime')
+                ->boolean()
+                ->label('Lembur'),
+            Tables\Columns\TextColumn::make('alasan_overtime')
+                ->label('Alasan Overtime')
+                ->toggleable()
+                ->limit(30),
+        ])
+            ->filters([
+                //
+            ])
+            ->actions([
+                Tables\Actions\EditAction::make(),
+            ])
+            ->bulkActions([
+                Tables\Actions\BulkActionGroup::make([
+                    Tables\Actions\DeleteBulkAction::make(),
+                ]),
+            ]);
+    }
+
+    public static function getRelations(): array
+    {
+        return [
+            //
+        ];
+    }
+
+    /**
+     * Batasi data absensi yang bisa dilihat user sesuai jabatan & team.
+     */
+    public static function getEloquentQuery(): Builder
+    {
+        $query = parent::getEloquentQuery();
+        $user  = Auth::user();
+
+        if (! $user) {
+            return $query->whereRaw('1 = 0');
+        }
+
+        // SUPER ADMIN (role Spatie) → boleh lihat semua absensi
+        if (method_exists($user, 'hasRole') && $user->hasRole('super_admin')) {
+            return $query;
+        }
+
+        // Ambil karyawan yang terkait dengan user
+        $karyawan = $user->karyawan ?? null;
+        if (! $karyawan) {
+            // User tidak punya karyawan terkait → jangan tampilkan apa-apa
+            return $query->whereRaw('1 = 0');
+        }
+
+        $positionId = $karyawan->position_id;
+
+        // Kalau position_id tidak dikenal di hirarki → hanya lihat absensi sendiri
+        if (! array_key_exists($positionId, self::$positionRankById)) {
+            return $query->where('karyawan_id', $karyawan->id);
+        }
+
+        $currentRank = self::$positionRankById[$positionId];
+
+        // TEAM MEMBER (rank paling rendah) → hanya boleh lihat absensi sendiri
+        if ($currentRank === 1) {
+            return $query->where('karyawan_id', $karyawan->id);
+        }
+
+        // Untuk atasan:
+        // - boleh lihat dirinya sendiri
+        // - boleh lihat bawahan DI TEAM YANG SAMA
+        //   dengan position_id yang rank-nya <= rank dia (lebih rendah atau sama)
+
+        $allowedPositionIds = collect(self::$positionRankById)
+            ->filter(fn($rank) => $rank <= $currentRank)
+            ->keys(); // ini berisi daftar position_id yang boleh dia lihat
+
+        return $query->where(function (Builder $outer) use ($karyawan, $allowedPositionIds) {
+            $outer
+                // selalu boleh lihat absensi sendiri
+                ->where('karyawan_id', $karyawan->id)
+                // + bawahan di team yang sama
+                ->orWhereHas('karyawan', function (Builder $q) use ($karyawan, $allowedPositionIds) {
+                    $q->where('team_id', $karyawan->team_id)
+                        ->whereIn('position_id', $allowedPositionIds);
+                });
+        });
+    }
+
+    public static function getPages(): array
+    {
+        return [
+            'index' => Pages\ListAbsensis::route('/'),
+            'create' => Pages\CreateAbsensi::route('/create'),
+            'edit' => Pages\EditAbsensi::route('/{record}/edit'),
+        ];
+    }
+}

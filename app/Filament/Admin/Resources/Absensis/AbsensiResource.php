@@ -8,6 +8,7 @@ use App\Filament\Admin\Resources\Absensis\Pages\ListAbsensis;
 use App\Filament\Admin\Resources\Absensis\Schemas\AbsensiForm;
 use App\Filament\Admin\Resources\Absensis\Tables\AbsensisTable;
 use App\Models\Absensi;
+use App\Services\RoleHierarchy;
 use BackedEnum;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
@@ -29,6 +30,11 @@ class AbsensiResource extends Resource
 
     protected static ?int $navigationSort = 4;
 
+    public static function canViewAny(): bool
+    {
+        return auth()->user()?->can('viewAny', Absensi::class) ?? false;
+    }
+
     public static function form(Schema $schema): Schema
     {
         return AbsensiForm::configure($schema);
@@ -44,57 +50,40 @@ class AbsensiResource extends Resource
      */
     public static function getEloquentQuery(): Builder
     {
-        $query = parent::getEloquentQuery();
         $user = auth()->user();
 
         if (! $user) {
-            return $query->whereRaw('1 = 0');
+            return parent::getEloquentQuery()->whereRaw('1 = 0');
         }
 
-        // Admin melihat semua data absensi
-        if ($user->hasRole('admin')) {
-            return $query;
-        }
-
-        $role = $user->getRoleNames()->first();
-
-        // Hierarki jabatan bawahan yang diizinkan dilihat oleh atasan
-        $allowed = match ($role) {
-            'group_leader' => ['Team Member'],
-            'section_leader' => ['Team Member', 'Group Leader'],
-            'supervisor' => ['Team Member', 'Group Leader', 'Section Leader'],
-            'assistant_manager' => ['Team Member', 'Group Leader', 'Section Leader', 'Supervisor'],
-            'team_manager' => ['Team Member', 'Group Leader', 'Section Leader', 'Assistant Manager', 'Supervisor'],
-            'departement_manager' => ['Team Member', 'Group Leader', 'Section Leader', 'Supervisor', 'Assistant Manager', 'Team Manager'],
-            default => [],
-        };
-
-        return $query->where(function (Builder $q) use ($user, $allowed) {
-            // Selalu bisa melihat absensi milik sendiri
-            if ($user->karyawan_id) {
-                $q->where('karyawan_id', $user->karyawan_id);
-            }
-
-            // Atasan dapat melihat absensi bawahan sesuai daftar yang diizinkan
-            if (! empty($allowed)) {
-                $q->orWhereHas('karyawan', function (Builder $sub) use ($allowed) {
-                    $sub->whereIn('jabatan', $allowed);
-                });
-            }
-        });
+        return RoleHierarchy::scopeAbsensis(parent::getEloquentQuery(), $user);
     }
 
     public static function canCreate(): bool
     {
-        return auth()->user()?->can('attendance.create') ?? true;
+        $user = auth()->user();
+
+        return $user !== null
+            && $user->can('create', Absensi::class)
+            && ($user->hasRole('admin') || $user->karyawan_id !== null);
+    }
+
+    public static function canView(Model $record): bool
+    {
+        return auth()->user()?->can('view', $record) ?? false;
     }
 
     public static function canEdit(Model $record): bool
     {
-        return auth()->user()?->hasRole('admin') ?? false;
+        return auth()->user()?->can('update', $record) ?? false;
     }
 
     public static function canDelete(Model $record): bool
+    {
+        return auth()->user()?->can('delete', $record) ?? false;
+    }
+
+    public static function canDeleteAny(): bool
     {
         return auth()->user()?->hasRole('admin') ?? false;
     }

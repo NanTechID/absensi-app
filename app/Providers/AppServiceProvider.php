@@ -4,6 +4,8 @@ namespace App\Providers;
 
 use App\Models\Absensi;
 use App\Policies\AbsensiPolicy;
+use App\Http\Responses\FilamentLoginResponse;
+use Filament\Auth\Http\Responses\Contracts\LoginResponse;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
 
@@ -14,7 +16,7 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        $this->app->bind(LoginResponse::class, FilamentLoginResponse::class);
     }
 
     /**

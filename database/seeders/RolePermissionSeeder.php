@@ -15,13 +15,13 @@ class RolePermissionSeeder extends Seeder
         // Reset cached roles and permissions
         app()[PermissionRegistrar::class]->forgetCachedPermissions();
 
-        // Permissions untuk resource Absensi / Attendance
+        // Shield-generated permissions for the attendance resource.
         $permissions = [
-            'attendance.create',
-            'attendance.view',              // view own records
-            'attendance.view_subordinates', // melihat daftar absensi bawahan
-            'attendance.update',
-            'attendance.delete',
+            'ViewAny:Absensi',
+            'View:Absensi',
+            'Create:Absensi',
+            'Update:Absensi',
+            'Delete:Absensi',
         ];
 
         foreach ($permissions as $perm) {
@@ -44,13 +44,12 @@ class RolePermissionSeeder extends Seeder
             Role::firstOrCreate(['name' => $r, 'guard_name' => 'web']);
         }
 
-        // Assign permissions:
-        // Admin => semua permissions
+        // The admin role receives every attendance permission.
         $adminRole = Role::where('name', 'admin')->first();
         $adminRole->syncPermissions($permissions);
 
-        // Non-admin: create & view own
-        $basicPerms = ['attendance.create', 'attendance.view'];
+        // Basic roles can create attendance and view their own records.
+        $basicPerms = ['Create:Absensi', 'View:Absensi'];
         $nonAdmins = [
             'team_member',
             'group_leader',
@@ -64,7 +63,7 @@ class RolePermissionSeeder extends Seeder
             Role::where('name', $r)->first()->syncPermissions($basicPerms);
         }
 
-        // Leaders & Managers: izin melihat bawahan
+        // Leaders and managers can view subordinate records, still scoped by RoleHierarchy.
         $seeSubordinates = [
             'group_leader',
             'section_leader',
@@ -74,7 +73,7 @@ class RolePermissionSeeder extends Seeder
             'departement_manager',
         ];
         foreach ($seeSubordinates as $r) {
-            Role::where('name', $r)->first()->givePermissionTo('attendance.view_subordinates');
+            Role::where('name', $r)->first()->givePermissionTo('ViewAny:Absensi');
         }
 
         // Sinkronisasi admin user

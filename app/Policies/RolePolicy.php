@@ -1,0 +1,47 @@
+<?php
+
+namespace App\Policies;
+
+use App\Models\User;
+use Illuminate\Auth\Access\HandlesAuthorization;
+use Spatie\Permission\Models\Role;
+
+class RolePolicy
+{
+    use HandlesAuthorization;
+
+    public function before(User $user, string $ability): ?bool
+    {
+        return $user->hasRole('admin') ? true : null;
+    }
+
+    public function viewAny(User $user): bool
+    {
+        return false;
+    }
+
+    public function view(User $user, Role $role): bool
+    {
+        return false;
+    }
+
+    public function create(User $user): bool
+    {
+        return false;
+    }
+
+    public function update(User $user, Role $role): bool
+    {
+        return false;
+    }
+
+    public function delete(User $user, Role $role): bool
+    {
+        return false;
+    }
+
+    public function deleteAny(User $user): bool
+    {
+        return false;
+    }
+}

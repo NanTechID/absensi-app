@@ -6,11 +6,12 @@ use App\Models\Absensi;
 use Closure;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\FileUpload;
+use Filament\Forms\Components\Hidden;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TimePicker;
 use Filament\Forms\Components\Toggle;
-use Filament\Forms\Get;
+use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Schema;
 
 class AbsensiForm
@@ -23,8 +24,7 @@ class AbsensiForm
                     ->label('Karyawan')
                     ->relationship('karyawan', 'nama_karyawan')
                     ->default(fn () => auth()->user()?->karyawan_id)
-                    ->disabled(fn () => ! (auth()->user()?->hasRole('admin') ?? false))
-                    ->dehydrated()
+                    ->visible(fn () => auth()->user()?->hasRole('admin') ?? false)
                     ->required()
                     ->searchable()
                     ->preload()
@@ -40,6 +40,11 @@ class AbsensiForm
                             }
                         }
                     }),
+
+                Hidden::make('karyawan_id')
+                    ->default(fn () => auth()->user()?->karyawan_id)
+                    ->visible(fn () => ! (auth()->user()?->hasRole('admin') ?? false))
+                    ->required(),
 
                 DatePicker::make('tanggal')
                     ->label('Tanggal')

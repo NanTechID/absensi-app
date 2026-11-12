@@ -13,6 +13,7 @@ class Absensi extends Model
     use HasFactory;
 
     protected $fillable = [
+        'user_id',
         'karyawan_id',
         'tanggal',
         'waktu_masuk',
@@ -36,6 +37,14 @@ class Absensi extends Model
     public function karyawan(): BelongsTo
     {
         return $this->belongsTo(Karyawan::class);
+    }
+
+    /**
+     * User linked to this attendance record, when the employee has an account.
+     */
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class);
     }
 
     /**
